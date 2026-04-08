@@ -3,7 +3,16 @@ import os
 from dotenv import load_dotenv
 from src.rag.pipeline import RAG
 
-st.title("Asistente RAG per b-resol")
+#crear la interfice
+
+#dos columnes per logo i titol
+col1, col2 = st.columns([1,5])
+with col1:
+    st.image('assets/logo_b-resol.png', width=80)
+
+with col2:
+    st.title("Asistent RAG b-resol")
+
 
 if "rag_model" not in st.session_state:
     load_dotenv()
