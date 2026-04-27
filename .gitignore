@@ -19,6 +19,7 @@ data/vectore_store/
 *.npy
 *.npz
 *.log
+data/vector_store/
 
 # Si los PDFs son privados, mantén esta línea. 
 # Si quieres que el PDF de ejemplo se suba, comenta la siguiente línea:
