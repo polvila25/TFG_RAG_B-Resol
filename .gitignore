@@ -20,10 +20,12 @@ data/vectore_store/
 *.npz
 *.log
 data/vector_store/
+data/procesed
 
 # Si los PDFs son privados, mantén esta línea. 
 # Si quieres que el PDF de ejemplo se suba, comenta la siguiente línea:
 data/raw/ 
+
 
 # --- Archivos de usuario y temporales ---
 __pycache__/
