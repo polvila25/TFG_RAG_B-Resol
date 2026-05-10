@@ -1,207 +1,111 @@
-import uuid
-from typing import Any, Dict, Iterable, List
+import json
+from pathlib import Path
+from typing import Any, Dict, List
 
-from qdrant_client import models
+from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
 from src.vector_store.config import (
-    COLLECTION_NAME,
-    UPLOAD_BATCH_SIZE,
-    UUID_NAMESPACE,
+    CHUNKS_PATH,
+    EMBEDDED_CHUNKS_PATH,
+    EMBEDDING_MODEL_NAME,
     VECTOR_SIZE,
 )
-from src.vector_store.qdrant_connection import get_qdrant_client
 
 
-Chunk = Dict[str, Any]
+def load_chunks(path: Path) -> List[Dict[str, Any]]:
+    if not path.exists():
+        raise FileNotFoundError(f"Chunks file not found: {path}")
+
+    with path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    if not isinstance(data, list):
+        raise ValueError("Expected all_chunks.json to contain a list of chunks.")
+
+    return data
 
 
-PAYLOAD_FIELDS = [
-    "text",
-    "embedding_text",
-    "chunk_title",
-    "chunk_type",
-    "document_type",
-    "representation_type",
-    "retrieval_layer",
-    "application_layer",
-    "source_document",
-    "source_page",
-    "language",
-    "domain",
-    "jurisdiction",
-    "phase",
-    "procedure",
-    "related_protocols",
-    "previous_step_id",
-    "next_step_ids",
-    "risk_category",
-    "requires_human_review",
-    "keywords",
-]
-
-
-def deterministic_uuid_from_chunk_id(chunk_id: str) -> str:
-    """
-    Genera un UUID determinista a partir del chunk_id.
-
-    Mismo chunk_id -> mismo UUID.
-    Esto evita duplicados al reindexar.
-    """
-
-    namespace = uuid.uuid5(uuid.NAMESPACE_DNS, UUID_NAMESPACE)
-    return str(uuid.uuid5(namespace, chunk_id))
-
-
-def validate_embedded_chunk(chunk: Chunk, index: int) -> None:
-    """
-    Valida que el chunk tenga vector antes de subirlo a Qdrant.
-    """
-
+def validate_chunk_for_embedding(chunk: Dict[str, Any], index: int) -> None:
     chunk_id = chunk.get("id")
     payload = chunk.get("payload")
-    vector = chunk.get("vector")
 
     if not chunk_id:
-        raise ValueError(f"Chunk at index {index} has no id.")
+        raise ValueError(f"Chunk at index {index} has no 'id'.")
 
     if not isinstance(payload, dict):
-        raise ValueError(f"Chunk {chunk_id} has invalid payload.")
-
-    if not isinstance(vector, list):
-        raise ValueError(
-            f"Chunk {chunk_id} has no vector. "
-            "Embeddings must be generated before uploading."
-        )
-
-    if len(vector) != VECTOR_SIZE:
-        raise ValueError(
-            f"Chunk {chunk_id} has invalid vector size. "
-            f"Expected {VECTOR_SIZE}, got {len(vector)}."
-        )
+        raise ValueError(f"Chunk {chunk_id} has no valid payload.")
 
     embedding_text = payload.get("embedding_text")
     text = payload.get("text")
 
     if not isinstance(embedding_text, str) or not embedding_text.strip():
-        raise ValueError(f"Chunk {chunk_id} has empty embedding_text.")
+        raise ValueError(f"Chunk {chunk_id} has empty payload.embedding_text.")
 
     if not isinstance(text, str) or not text.strip():
-        raise ValueError(f"Chunk {chunk_id} has empty text.")
+        raise ValueError(f"Chunk {chunk_id} has empty payload.text.")
 
 
-def build_qdrant_payload(chunk: Chunk) -> Dict[str, Any]:
-    """
-    Construye el payload que se guardará en Qdrant.
-    """
+def generate_embeddings(
+    chunks: List[Dict[str, Any]],
+    batch_size: int = 32,
+) -> List[Dict[str, Any]]:
+    print(f"[INFO] Loading embedding model: {EMBEDDING_MODEL_NAME}")
+    model = SentenceTransformer(EMBEDDING_MODEL_NAME)
 
-    original_payload = chunk["payload"]
+    embedded_chunks: List[Dict[str, Any]] = []
 
-    qdrant_payload: Dict[str, Any] = {
-        "chunk_id": chunk["id"],
-    }
+    for i, chunk in enumerate(chunks):
+        validate_chunk_for_embedding(chunk, i)
 
-    for field in PAYLOAD_FIELDS:
-        qdrant_payload[field] = original_payload.get(field)
+    texts = [chunk["payload"]["embedding_text"] for chunk in chunks]
 
-    return qdrant_payload
+    print(f"[INFO] Generating embeddings for {len(texts)} chunks...")
 
-
-def chunk_to_point(chunk: Chunk) -> models.PointStruct:
-    """
-    Convierte un chunk embebido en un PointStruct de Qdrant.
-    """
-
-    chunk_id = str(chunk["id"])
-    point_id = deterministic_uuid_from_chunk_id(chunk_id)
-
-    return models.PointStruct(
-        id=point_id,
-        vector=chunk["vector"],
-        payload=build_qdrant_payload(chunk),
+    vectors = model.encode(
+        texts,
+        batch_size=batch_size,
+        show_progress_bar=True,
+        normalize_embeddings=True,
     )
 
+    for chunk, vector in zip(chunks, vectors):
+        vector_list = vector.tolist()
 
-def batched(items: List[Any], batch_size: int) -> Iterable[List[Any]]:
-    """
-    Divide una lista en lotes.
-    """
-
-    for start in range(0, len(items), batch_size):
-        yield items[start:start + batch_size]
-
-
-def build_points_from_chunks(chunks: List[Chunk]) -> List[models.PointStruct]:
-    """
-    Convierte todos los chunks embebidos en Points de Qdrant.
-    """
-
-    print("=" * 80)
-    print("[POINTS] Building Qdrant points")
-    print("=" * 80)
-
-    points: List[models.PointStruct] = []
-
-    for index, chunk in enumerate(chunks):
-        validate_embedded_chunk(chunk, index)
-        point = chunk_to_point(chunk)
-        points.append(point)
-
-    print(f"[OK] Points built: {len(points)}")
-
-    return points
-
-
-def upload_points_to_qdrant(points: List[models.PointStruct]) -> None:
-    """
-    Sube los Points a Qdrant por lotes.
-    """
-
-    client = get_qdrant_client()
-
-    print("=" * 80)
-    print("[QDRANT] Uploading points")
-    print("=" * 80)
-
-    print(f"[INFO] Collection: {COLLECTION_NAME}")
-    print(f"[INFO] Points to upload: {len(points)}")
-    print(f"[INFO] Upload batch size: {UPLOAD_BATCH_SIZE}")
-
-    total_uploaded = 0
-    batches = list(batched(points, UPLOAD_BATCH_SIZE))
-
-    for batch in tqdm(batches, desc="Uploading to Qdrant"):
-        try:
-            client.upsert(
-                collection_name=COLLECTION_NAME,
-                points=batch,
-                wait=True,
+        if len(vector_list) != VECTOR_SIZE:
+            raise ValueError(
+                f"Invalid vector size for chunk {chunk.get('id')}. "
+                f"Expected {VECTOR_SIZE}, got {len(vector_list)}."
             )
 
-            total_uploaded += len(batch)
+        chunk["vector"] = vector_list
+        embedded_chunks.append(chunk)
 
-        except Exception as exc:
-            print("[ERROR] Failed while uploading batch to Qdrant.")
-            print(f"[ERROR] Batch size: {len(batch)}")
-            print(f"[ERROR] Exception: {exc}")
-            raise
-
-    collection_info = client.get_collection(
-        collection_name=COLLECTION_NAME,
-    )
-
-    print("[OK] Upload completed.")
-    print(f"[INFO] Uploaded points: {total_uploaded}")
-    print(f"[INFO] Qdrant points count: {collection_info.points_count}")
+    return embedded_chunks
 
 
-def upload_embedded_chunks(chunks: List[Chunk]) -> None:
-    """
-    Pipeline:
-    1. Convierte chunks en Points.
-    2. Sube Points a Qdrant.
-    """
+def save_embedded_chunks(chunks: List[Dict[str, Any]], path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
 
-    points = build_points_from_chunks(chunks)
+    with path.open("w", encoding="utf-8") as f:
+        json.dump(chunks, f, ensure_ascii=False, indent=2)
 
-    upload_points_to_qdrant(points)
+    print(f"[OK] Embedded chunks saved to: {path}")
+
+
+def generate_and_save_embeddings() -> List[Dict[str, Any]]:
+    chunks = load_chunks(CHUNKS_PATH)
+    print(f"[INFO] Loaded chunks: {len(chunks)}")
+
+    embedded_chunks = generate_embeddings(chunks)
+
+    save_embedded_chunks(embedded_chunks, EMBEDDED_CHUNKS_PATH)
+    return embedded_chunks
+
+
+def main() -> None:
+    generate_and_save_embeddings()
+
+
+if __name__ == "__main__":
+    main()
