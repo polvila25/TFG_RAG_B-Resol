@@ -1,76 +1,171 @@
-import os
-import faiss
-from qdrant_client import QdrantClient
-from langchain_community.docstore.in_memory import InMemoryDocstore
-from langchain_community.vectorstores import FAISS
-from langchain_qdrant import QdrantVectorStore
-from qdrant_client.http.models import Distance, VectorParams
-from langchain_huggingface import HuggingFaceEmbeddings
-from uuid import uuid4
+from typing import Any, Dict, List, Optional
 
-'''
-Módulo de gestión del vector store semántico.
-Contiene la clase VectorStore, que indexa, almacena y busca fragmentos de texto usando FAISS y embeddings.
-Ahora con PERSISTENCIA: guarda y carga los vectores desde el disco para no reprocesar el PDF.
-'''
-class VectorStore:
-    def __init__(self, persist_dir="data/vector_store", collection='normativa_educativa'):
-        self.persist_dir = persist_dir
-        self.collection_name = collection
-        self.embeddings = HuggingFaceEmbeddings(model_name="paraphrase-multilingual-MiniLM-L12-v2")
-        
-        #1. Inicialización del Cliente Qdrant con persistencia en disco
-        os.makedirs(self.persist_dir, exist_ok=True)
-        self.client = QdrantClient(path=self.persist_dir)
+from qdrant_client import QdrantClient, models
+from sentence_transformers import SentenceTransformer
 
-        # 2. Verificamos y creamos la colección
-        if not self.client.collection_exists(collection_name=self.collection_name):
-            #obtenemos la dimension del modelo de embeddings
-            dimension = len(self.embeddings.embed_query("prueba de dimensión"))
-            print(f'Dimension del emmbeding: {dimension}')
+from src.vector_store.config import (
+    COLLECTION_NAME,
+    EMBEDDING_MODEL_NAME,
+    QDRANT_LOCAL_PATH,
+)
 
-            self.client.create_collection(
-                collection_name=self.collection_name,
-                #configuramos dimension de cada vector y distancia
-                vectors_config=VectorParams(
-                    size=dimension, 
-                    distance=Distance.COSINE # Métrica recomendada para embeddings de texto
-                ),
+
+class RetrievedChunk:
+    def __init__(
+        self,
+        point_id: str,
+        score: float,
+        payload: Dict[str, Any],
+    ) -> None:
+        self.point_id = point_id
+        self.score = score
+        self.payload = payload
+
+    @property
+    def text(self) -> str:
+        return self.payload.get("text", "")
+
+    @property
+    def source_document(self) -> str:
+        return self.payload.get("source_document", "")
+
+    @property
+    def source_page(self) -> Any:
+        return self.payload.get("source_page")
+
+    @property
+    def chunk_title(self) -> str:
+        return self.payload.get("chunk_title", "")
+
+
+class QdrantRetriever:
+    """
+    Retriever semántico sobre Qdrant.
+
+    Responsabilidades:
+    - Generar embedding de la query.
+    - Aplicar filtros de payload.
+    - Recuperar top_k candidatos.
+    - Devolver chunks con score y metadatos.
+    """
+
+    def __init__(
+        self,
+        collection_name: str = COLLECTION_NAME,
+        qdrant_path: str = str(QDRANT_LOCAL_PATH),
+        embedding_model_name: str = EMBEDDING_MODEL_NAME,
+    ) -> None:
+        self.collection_name = collection_name
+        self.client = QdrantClient(path=qdrant_path)
+        self.embedding_model = SentenceTransformer(embedding_model_name)
+
+    def _build_filter(
+        self,
+        retrieval_layer: Optional[str] = None,
+        risk_category: Optional[str] = None,
+        document_types: Optional[List[str]] = None,
+        language: Optional[str] = None,
+        jurisdiction: Optional[str] = "Catalunya",
+    ) -> Optional[models.Filter]:
+        must_conditions: List[models.Condition] = []
+
+        if retrieval_layer and retrieval_layer != "unknown":
+            must_conditions.append(
+                models.FieldCondition(
+                    key="retrieval_layer",
+                    match=models.MatchValue(value=retrieval_layer),
+                )
             )
 
-        # 3. Enlace con la abstracción de LangChain
-        self.vector_store = QdrantVectorStore(
-            client=self.client,
-            collection_name=self.collection_name,
-            embedding=self.embeddings,
-        )
-      
-      # # Comprobamos si ya existe una base de datos guardada en la carpeta
-      # if os.path.exists(os.path.join(self.persist_dir, "index.faiss")):
-      #     # Si existe, la cargamos directamente (¡Súper rápido!)
-      #     self.vector_store
-      #     self.vector_store = FAISS.load_local(
-      #         folder_path=self.persist_dir,
-      #         embeddings=self.embeddings,
-      #         allow_dangerous_deserialization=True # Requerido por FAISS por seguridad local
-      #     )
-      # else:
-      #     # Si no existe, creamos una vacía desde cero
-      #     dimension = len(self.embeddings.embed_query("hola món"))
-      #     self.index = faiss.IndexFlatL2(dimension)
-      #     self.vector_store = FAISS(
-      #         embedding_function=self.embeddings,
-      #         index=self.index,
-      #         docstore=InMemoryDocstore(),
-      #         index_to_docstore_id={},
-      #     )
+        if risk_category and risk_category != "unknown":
+            must_conditions.append(
+                models.FieldCondition(
+                    key="risk_category",
+                    match=models.MatchValue(value=risk_category),
+                )
+            )
 
-    def add_docs(self, list_of_docs):
-        uuids = [str(uuid4()) for _ in range(len(list_of_docs))]
-        self.vector_store.add_documents(documents=list_of_docs, ids=uuids)
-        
-        
-    def search_docs(self, query, k=6):
-        # QdrantVectorStore soporta nativamente la Búsqueda de Máxima Relevancia Marginal (MMR).
-        results = self.vector_store.max_marginal_relevance_search(query, k=k, fetch_k=20)
-        return results
+        if document_types:
+            must_conditions.append(
+                models.FieldCondition(
+                    key="document_type",
+                    match=models.MatchAny(any=document_types),
+                )
+            )
+
+        if language:
+            must_conditions.append(
+                models.FieldCondition(
+                    key="language",
+                    match=models.MatchValue(value=language),
+                )
+            )
+
+        if jurisdiction:
+            must_conditions.append(
+                models.FieldCondition(
+                    key="jurisdiction",
+                    match=models.MatchValue(value=jurisdiction),
+                )
+            )
+
+        if not must_conditions:
+            return None
+
+        return models.Filter(must=must_conditions)
+
+    def retrieve(
+        self,
+        query: str,
+        retrieval_layer: Optional[str] = None,
+        risk_category: Optional[str] = None,
+        document_types: Optional[List[str]] = None,
+        top_k: int = 15,
+        language: Optional[str] = None,
+    ) -> List[RetrievedChunk]:
+        """
+        Recupera chunks desde Qdrant.
+
+        query:
+            Query enriquecida.
+
+        top_k:
+            Número de candidatos iniciales antes del reranking.
+        """
+
+        query_vector = self.embedding_model.encode(
+            query,
+            normalize_embeddings=True,
+        ).tolist()
+
+        query_filter = self._build_filter(
+            retrieval_layer=retrieval_layer,
+            risk_category=risk_category,
+            document_types=document_types,
+            language=language,
+        )
+
+        results = self.client.query_points(
+            collection_name=self.collection_name,
+            query=query_vector,
+            query_filter=query_filter,
+            limit=top_k,
+            with_payload=True,
+            with_vectors=False,
+        )
+
+        chunks: List[RetrievedChunk] = []
+
+        for hit in results.points:
+            chunks.append(
+                RetrievedChunk(
+                    point_id=str(hit.id),
+                    score=float(hit.score),
+                    payload=hit.payload or {},
+                )
+            )
+
+        return chunks
+
+    def close(self) -> None:
+        self.client.close()
