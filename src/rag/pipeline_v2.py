@@ -9,6 +9,7 @@ from src.rag.reranker import CrossEncoderReranker, RerankedChunk
 from src.rag.context_builder import ContextBuilder
 from src.rag.prompt_builder import get_prompt
 from src.rag.generator import LLMGenerator
+from src.bresol_context.bresol_analizador import BresolAnalizador, BresolAnalisis
 
 class AdvancedRAGPipeline:
     """
@@ -16,6 +17,12 @@ class AdvancedRAGPipeline:
     Query -> Analyzer -> Enricher -> Retriever -> Reranker -> Context Builder -> LLM
     """
     def __init__(self, gemini_api_key: str, gemini_model: str = "gemini-1.5-flash"):
+        print("[INIT] Inicializando Bresol Intake Analyzer...")
+        self.bresol_intake_analyzer = BresolAnalizador(
+            gemini_api_key=gemini_api_key,
+            gemini_model="gemini-2.5-flash-lite",
+        )
+
         print("[INIT] Inicializando Query Analyzer...")
         self.analyzer = QueryAnalyzer(gemini_api_key=gemini_api_key)
         
@@ -24,6 +31,9 @@ class AdvancedRAGPipeline:
         
         print("[INIT] Inicializando Reranker (CrossEncoder)...")
         self.reranker = CrossEncoderReranker()
+        
+        print("[INIT] Inicializando Context Builder...")
+        self.context_builder = ContextBuilder()
         
         print("[INIT] Inicializando LLM Generator...")
         self.prompt_template = get_prompt()
@@ -76,6 +86,17 @@ class AdvancedRAGPipeline:
         
         t_total_start = time.time()
         
+        # 0. Bresol Intake Analysis
+        print("[0/6] Analizando consulta con Bresol...")
+        t0 = time.time()
+        bresol_analysis: BresolAnalisis = self.bresol_intake_analyzer.analyze(user_query)
+        t_bresol = time.time() - t0
+        print(f"      - Tipo de caso Bresol: {bresol_analysis.bresol_case_type}")
+        print(f"      - Indicadores detectados: {', '.join(bresol_analysis.detected_indicators)}")
+        print(f"      - Información faltante: {', '.join(bresol_analysis.missing_information)}")
+        print(f"      [Time] {t_bresol:.3f}s")
+
+        
         # 1. Query Analyzer
         print("[1/6] Analizando consulta...")
         t0 = time.time()
@@ -89,7 +110,12 @@ class AdvancedRAGPipeline:
         # 2. Query Enricher
         print("\n[2/6] Enriqueciendo consulta...")
         t0 = time.time()
-        enriched: EnrichedQuery = enrich_query(user_query, analysis)
+
+        enriched: EnrichedQuery = enrich_query(
+            original_query=user_query,
+            analysis=analysis,
+            bresol_intake=bresol_analysis,
+        )
         t_enricher = time.time() - t0
         print(f"      - Query de búsqueda: {enriched.search_query}")
         print(f"      - Términos de expansión: {', '.join(enriched.expansion_terms[:5])}...")
@@ -165,14 +191,23 @@ class AdvancedRAGPipeline:
         # 5. Context Builder
         print("\n[5/6] Construyendo contexto estructurado...")
         t0 = time.time()
-        context = ContextBuilder.build(final_chunks)
+        context = self.context_builder.build(final_chunks)
         t_context = time.time() - t0
         print(f"      [Time] {t_context:.3f}s")
 
         # 6. LLM Generation
         print("[6/6] Generando respuesta con IA...")
         t0 = time.time()
-        answer = self.generator.generate(user_query, context)
+        answer = self.generator.generate(
+            user_query=user_query,
+            answer_context=context,
+            query_type=analysis.query_type,
+            risk_category=analysis.risk_category,
+            retrieval_layer=analysis.retrieval_layer,
+            safety_level=analysis.safety_level,
+            bresol_detected_indicators=", ".join(bresol_analysis.detected_indicators),
+            bresol_missing_information=", ".join(bresol_analysis.missing_information),
+        )
         t_gen = time.time() - t0
         print(f"      [Time] {t_gen:.3f}s")
 
@@ -185,9 +220,11 @@ class AdvancedRAGPipeline:
             "answer": answer,
             "analysis": analysis,
             "enriched_query": enriched,
+            "bresol_intake": bresol_analysis,
             "chunks": final_chunks,
             "context": context,
             "timings": {
+                "bresol_intake": t_bresol,
                 "analyzer": t_analyzer,
                 "enricher": t_enricher,
                 "retrieval_rerank": t_retrieval_rerank,

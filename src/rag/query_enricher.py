@@ -1,245 +1,201 @@
-from typing import Dict, List
+from dataclasses import dataclass, field
+from typing import List, Optional
 
-from src.rag.schemas import EnrichedQuery, QueryAnalysis, RiskCategory
-
-
-RISK_EXPANSIONS: Dict[RiskCategory, List[str]] = {
-    "assetjament_escolar": [
-        "assetjament escolar",
-        "bullying",
-        "violència entre iguals",
-        "repetició de conductes",
-        "intencionalitat de fer mal",
-        "desequilibri de poder",
-        "víctima",
-        "agressor",
-        "observadors",
-        "protocol d'actuació",
-        "mesures de protecció",
-    ],
-    "ciberassetjament": [
-        "ciberassetjament",
-        "cyberbullying",
-        "xarxes socials",
-        "Instagram",
-        "WhatsApp",
-        "mitjans digitals",
-        "insults digitals",
-        "difusió d'imatges",
-        "perfil fals",
-        "ridiculització pública",
-        "exclusió digital",
-        "protocol de ciberassetjament",
-        "circuit d'actuació",
-    ],
-    "consum_substancies": [
-        "consum de substàncies",
-        "drogues",
-        "alcohol",
-        "cànnabis",
-        "vapeig",
-        "centre educatiu",
-        "prevenció",
-        "detecció",
-        "intervenció",
-        "protocol de drogues",
-        "mesures educatives",
-    ],
-    "maltractament_infantil": [
-        "maltractament infantil",
-        "negligència",
-        "protecció del menor",
-        "detecció de maltractament",
-        "indicadors de risc",
-        "àmbit educatiu",
-        "activació de protocol",
-        "derivació",
-    ],
-    "violencia_sexual": [
-        "violència sexual",
-        "abús sexual",
-        "agressió sexual",
-        "grooming",
-        "imatges íntimes",
-        "protecció del menor",
-        "activació urgent",
-        "protocol d'actuació",
-    ],
-    "conducta_suicida": [
-        "conducta suïcida",
-        "ideació suïcida",
-        "risc immediat",
-        "mesures d'urgència",
-        "protecció de l'alumne",
-        "activació de protocol",
-        "seguiment",
-    ],
-    "autolesions": [
-        "autolesions",
-        "conductes autolesives",
-        "risc emocional",
-        "protecció de l'alumne",
-        "mesures d'urgència",
-        "seguiment educatiu",
-    ],
-    "tca": [
-        "trastorns de la conducta alimentària",
-        "TCA",
-        "anorèxia",
-        "bulímia",
-        "detecció a l'aula",
-        "prevenció",
-        "acompanyament",
-        "derivació",
-    ],
-    "falta_greument_perjudicial": [
-        "faltes greument perjudicials",
-        "convivència",
-        "mesures correctores",
-        "expedient",
-        "protocol de convivència",
-        "normes de centre",
-    ],
-    "menor_14_infraccio_penal": [
-        "menor de catorze anys",
-        "menor de 14 anys",
-        "infracció penal",
-        "conflicte",
-        "comissió d'una infracció",
-        "protocol aplicable",
-        "mesures educatives",
-    ],
-    "conductes_odi_discriminacio": [
-        "conductes d'odi",
-        "discriminació",
-        "racisme",
-        "xenofòbia",
-        "homofòbia",
-        "violència discriminatòria",
-        "protocol d'actuació",
-    ],
-    "acompanyament_alumnat_transgenere": [
-        "alumnat transgènere",
-        "identitat de gènere",
-        "expressió de gènere",
-        "acompanyament educatiu",
-        "protocol d'acompanyament",
-    ],
-    "general": [
-        "convivència",
-        "centre educatiu",
-        "protocol d'actuació",
-        "mesures educatives",
-        "seguiment",
-    ],
-    "unknown": [
-        "centre educatiu",
-        "convivència",
-        "protocol d'actuació",
-        "orientació educativa",
-        "mesures de protecció",
-    ],
-}
+from src.rag.schemas import QueryAnalysis
+from src.bresol_context.bresol_analizador import BresolAnalisis
 
 
-QUERY_TYPE_EXPANSIONS = {
-    "application": [
-        "cal recuperar actuacions pràctiques",
-        "protocol d'actuació",
-        "circuit d'intervenció",
-        "mesures inicials",
-        "mesures de protecció",
-        "orientacions per al centre educatiu",
-    ],
-    "legal_support": [
-        "base legal",
-        "normativa aplicable",
-        "llei",
-        "decret",
-        "marc jurídic",
-        "fonament normatiu",
-    ],
-    "mixed": [
-        "actuació pràctica",
-        "protocol aplicable",
-        "circuit d'intervenció",
-        "base legal",
-        "normativa aplicable",
-    ],
-    "unknown": [
-        "protocol d'actuació",
-        "orientació educativa",
-        "centre educatiu",
-    ],
-}
+@dataclass
+class EnrichedQuery:
+    original_query: str
+    search_query: str
+    expansion_terms: List[str] = field(default_factory=list)
+    bresol_indicators: List[str] = field(default_factory=list)
+    missing_information: List[str] = field(default_factory=list)
 
 
-def _deduplicate_terms(terms: List[str]) -> List[str]:
-    """
-    Elimina duplicados manteniendo el orden.
-    """
-    seen = set()
-    clean_terms = []
+class QueryEnricher:
+    def enrich(
+        self,
+        original_query: str,
+        analysis: QueryAnalysis,
+        bresol_intake: Optional[BresolAnalisis] = None,
+    ) -> EnrichedQuery:
+        expansion_terms = []
 
-    for term in terms:
-        normalized = term.lower().strip()
+        expansion_terms.extend(
+            self._terms_for_risk_category(analysis.risk_category)
+        )
 
-        if normalized and normalized not in seen:
-            seen.add(normalized)
-            clean_terms.append(term)
+        expansion_terms.extend(
+            self._terms_for_query_type(analysis.query_type)
+        )
 
-    return clean_terms
+        bresol_indicators = []
+        missing_information = []
+
+        if bresol_intake is not None:
+            bresol_indicators.extend(bresol_intake.detected_indicators)
+            missing_information.extend(bresol_intake.missing_information)
+
+            if bresol_intake.enriched_context_hint:
+                expansion_terms.append(bresol_intake.enriched_context_hint)
+
+            expansion_terms.extend(bresol_intake.detected_indicators)
+            expansion_terms.extend(bresol_intake.possible_crime_indicators)
+
+            if bresol_intake.phase_assessment != "unknown":
+                expansion_terms.append(
+                    f"fase o valoració inicial: {bresol_intake.phase_assessment}"
+                )
+
+        clean_terms = self._deduplicate(expansion_terms)
+
+        search_query = (
+            f"{original_query}\n"
+            f"Categoria de risc probable: {analysis.risk_category}.\n"
+            f"Tipus de consulta: {analysis.query_type}.\n"
+            f"Capa documental prioritària: {analysis.retrieval_layer}.\n"
+        )
+
+        if bresol_intake is not None:
+            search_query += (
+                f"Classificació inicial b-resol: {bresol_intake.bresol_case_type}.\n"
+                f"Indicadors detectats segons b-resol: {', '.join(bresol_intake.detected_indicators)}.\n"
+                f"Valoració inicial de fase: {bresol_intake.phase_assessment}.\n"
+            )
+
+            if bresol_intake.enriched_context_hint:
+                search_query += (
+                    f"Pista semàntica b-resol: {bresol_intake.enriched_context_hint}.\n"
+                )
+
+        search_query += (
+            "Context semàntic per a la recuperació documental: "
+            + ", ".join(clean_terms)
+            + "."
+        )
+
+        return EnrichedQuery(
+            original_query=original_query,
+            search_query=search_query,
+            expansion_terms=clean_terms,
+            bresol_indicators=bresol_indicators,
+            missing_information=missing_information,
+        )
+
+    def _terms_for_risk_category(self, risk_category: str) -> List[str]:
+        mapping = {
+            "assetjament_escolar": [
+                "assetjament escolar",
+                "bullying",
+                "violència entre iguals",
+                "repetició de conductes",
+                "intencionalitat de fer mal",
+                "desequilibri de poder",
+                "víctima",
+                "agressor",
+                "observadors",
+                "protocol d'actuació",
+                "mesures de protecció",
+            ],
+            "ciberassetjament": [
+                "ciberassetjament",
+                "cyberbullying",
+                "xarxes socials",
+                "missatgeria",
+                "difusió digital",
+                "perfils falsos",
+                "insults digitals",
+                "protocol de ciberassetjament",
+                "evidències digitals",
+            ],
+            "consum_substancies": [
+                "consum de substàncies",
+                "alcohol",
+                "drogues",
+                "cànnabis",
+                "vapeig",
+                "conductes de risc",
+                "actuació educativa",
+            ],
+            "conducta_suicida": [
+                "conducta suïcida",
+                "ideació suïcida",
+                "risc vital",
+                "urgència",
+                "protecció immediata",
+                "protocol d'actuació",
+            ],
+            "tca": [
+                "trastorns de la conducta alimentària",
+                "anorèxia",
+                "bulímia",
+                "afartament",
+                "imatge corporal",
+                "conductes compensatòries",
+            ],
+            "maltractament_infantil": [
+                "maltractament infantil",
+                "negligència",
+                "lesions inexplicades",
+                "protecció del menor",
+                "situació de risc",
+            ],
+        }
+
+        return mapping.get(risk_category, ["convivència escolar", "protocol educatiu"])
+
+    def _terms_for_query_type(self, query_type: str) -> List[str]:
+        if query_type == "application":
+            return [
+                "actuacions pràctiques",
+                "circuit d'intervenció",
+                "mesures inicials",
+                "mesures de protecció",
+                "orientacions per al centre educatiu",
+            ]
+
+        if query_type == "legal_support":
+            return [
+                "normativa aplicable",
+                "base legal",
+                "article",
+                "llei",
+                "decret",
+            ]
+
+        if query_type == "mixed":
+            return [
+                "actuació pràctica",
+                "protocol",
+                "circuit",
+                "base legal",
+                "normativa de suport",
+            ]
+
+        return ["orientació documental", "context educatiu"]
+
+    def _deduplicate(self, terms: List[str]) -> List[str]:
+        seen = set()
+        clean = []
+
+        for term in terms:
+            if not term:
+                continue
+
+            normalized = term.strip().lower()
+
+            if normalized not in seen:
+                seen.add(normalized)
+                clean.append(term.strip())
+
+        return clean
 
 
 def enrich_query(
     original_query: str,
     analysis: QueryAnalysis,
+    bresol_intake: Optional[BresolAnalisis] = None,
 ) -> EnrichedQuery:
-    """
-    Genera una query enriquecida para búsqueda semántica.
-
-    Importante:
-    - Esta query se usa para generar el embedding y buscar en Qdrant.
-    - La respuesta final debe seguir usando la pregunta original del usuario.
-    """
-
-    risk_terms = RISK_EXPANSIONS.get(
-        analysis.risk_category,
-        RISK_EXPANSIONS["unknown"],
-    )
-
-    query_type_terms = QUERY_TYPE_EXPANSIONS.get(
-        analysis.query_type,
-        QUERY_TYPE_EXPANSIONS["unknown"],
-    )
-
-    expansion_terms = _deduplicate_terms(
-        risk_terms + query_type_terms + analysis.detected_keywords
-    )
-
-    risk_part = ""
-    if analysis.risk_category != "unknown":
-        risk_part = f"Categoria de risc probable: {analysis.risk_category}. "
-
-    intent_part = f"Tipus de consulta: {analysis.query_type}. "
-
-    support_part = ""
-    if analysis.needs_legal_support:
-        support_part = (
-            "La consulta pot requerir actuació pràctica i suport legal. "
-        )
-
-    search_query = (
-        f"{original_query.strip()} "
-        f"{risk_part}"
-        f"{intent_part}"
-        f"{support_part}"
-        f"Context semàntic per a la recuperació documental: "
-        f"{', '.join(expansion_terms)}."
-    )
-
-    return EnrichedQuery(
-        original_query=original_query,
-        search_query=search_query,
-        expansion_terms=expansion_terms,
-    )
+    return QueryEnricher().enrich(original_query, analysis, bresol_intake)
