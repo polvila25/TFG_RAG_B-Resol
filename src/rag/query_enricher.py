@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 from src.rag.schemas import QueryAnalysis
-from src.bresol_context.bresol_analizador import BresolAnalisis
+from src.bresol_context.schemas import BresolIntakeAnalysis
 
 
 @dataclass
@@ -19,7 +19,7 @@ class QueryEnricher:
         self,
         original_query: str,
         analysis: QueryAnalysis,
-        bresol_intake: Optional[BresolAnalisis] = None,
+        bresol_intake: Optional[BresolIntakeAnalysis] = None,
     ) -> EnrichedQuery:
         expansion_terms = []
 
@@ -196,6 +196,6 @@ class QueryEnricher:
 def enrich_query(
     original_query: str,
     analysis: QueryAnalysis,
-    bresol_intake: Optional[BresolAnalisis] = None,
+    bresol_intake: Optional[BresolIntakeAnalysis] = None,
 ) -> EnrichedQuery:
     return QueryEnricher().enrich(original_query, analysis, bresol_intake)
