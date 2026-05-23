@@ -22,6 +22,7 @@ class QueryAnalysis:
     enriched_query_hint: str
     analyzer_used: str
     notes: Optional[str] = None
+    is_out_of_scope: bool = False
 
 @dataclass
 class EnrichedQuery:

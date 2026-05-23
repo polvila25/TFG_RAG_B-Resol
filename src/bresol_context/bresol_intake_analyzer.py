@@ -28,12 +28,7 @@ IMPORTANT:
 - Retorna només JSON vàlid, sense markdown.
 
 Objectiu:
-Analitzar la consulta inicial per extreure els indicadors presents, avaluar l'anonimat i la fase inicial de risc.
-
-Regles estrictes d'anonimat (Reporting Mode):
-- "anonymous": assigna aquest valor NOMÉS si el text explicita clarament que és anònim (ex. "això és anònim", "no vull dir qui sóc") o si s'esmenta que el canal és anònim.
-- "unknown": assigna aquest valor si no hi ha identificadors ni noms, però tampoc s'indica explícitament que sigui anònim.
-- "identified": assigna aquest valor si hi ha dades personals clares o un rol clar identificat de qui reporta.
+Analitzar la consulta inicial per extreure els indicadors presents i la fase inicial de risc.
 
 Marc de riscos b-resol:
 {risk_taxonomy}
@@ -46,12 +41,12 @@ Consulta inicial:
 
 Retorna exactament aquest JSON:
 
-{{
+{
   "bresol_case_type": "string (una de les claus del diccionari de riscos, ex: assetjament_escolar)",
   "risk_category": "string (igual que bresol_case_type)",
   "detected_indicators": ["string (indicadors concrets detectats)"],
   "missing_information": ["string (elements importants de la situació que falten)"],
-  "reporting_mode": "anonymous | identified | unknown",
+  "missing_minimum_elements": ["string (claus exactes de la llista minimum_elements del risc detectat que no es descriuen amb detall a la consulta, ex: 'repeticio_temporal', 'desequilibri_poder', 'intencionalitat', 'possible_victima_o_alumne_afectat')"],
   "reporter_role": "victim | teacher | observer | parent | unknown",
   "victim_identified": true/false (true només si es diu o s'identifica clarament la víctima),
   "aggressor_identified": true/false (true només si s'identifica l'agressor),
@@ -60,7 +55,7 @@ Retorna exactament aquest JSON:
   "requires_urgent_review": true/false (true si hi ha conducta_suicida, violencia_sexual o indicis clars de delicte greu o risc vital immediat),
   "enriched_context_hint": "string (pista de context molt breu per a cerca vectorial)",
   "notes": "string or null"
-}}
+}
 """
 
 
@@ -79,7 +74,7 @@ class BresolIntakeAnalyzer:
         self.prompt = PromptTemplate.from_template(BRESOL_INTAKE_PROMPT)
         self.chain = self.prompt | self.llm | StrOutputParser()
 
-    def analyze(self, user_query: str) -> BresolIntakeAnalysis:
+    def analyze(self, user_query: str, reporting_mode: str) -> BresolIntakeAnalysis:
         try:
             raw_response = self.chain.invoke({
                 "user_query": user_query,
@@ -104,7 +99,8 @@ class BresolIntakeAnalyzer:
                 risk_category=self._safe_str(data.get("risk_category"), "unknown"),
                 detected_indicators=self._safe_list(data.get("detected_indicators")),
                 missing_information=self._safe_list(data.get("missing_information")),
-                reporting_mode=self._safe_reporting_mode(data.get("reporting_mode")),
+                missing_minimum_elements=self._safe_list(data.get("missing_minimum_elements")),
+                reporting_mode=self._safe_reporting_mode(reporting_mode),
                 reporter_role=self._safe_reporter_role(data.get("reporter_role")),
                 victim_identified=self._safe_bool(data.get("victim_identified"), False),
                 aggressor_identified=self._safe_bool(data.get("aggressor_identified"), False),
@@ -114,9 +110,9 @@ class BresolIntakeAnalyzer:
                 enriched_context_hint=self._safe_optional_str(data.get("enriched_context_hint")),
                 notes=self._safe_optional_str(data.get("notes")),
             )
-
+        
         except Exception as exc:
-            return self._fallback(user_query, str(exc))
+            return self._fallback(user_query, reporting_mode, str(exc))
 
     def _parse_json(self, raw_response: str) -> dict:
         if not isinstance(raw_response, str) or not raw_response.strip():
@@ -173,7 +169,7 @@ class BresolIntakeAnalyzer:
             return value # type: ignore
         return "unknown"
 
-    def _fallback(self, user_query: str, error: str) -> BresolIntakeAnalysis:
+    def _fallback(self, user_query: str, reporting_mode: str, error: str) -> BresolIntakeAnalysis:
         # Check simple urgency keywords to at least capture extreme risks
         lower_query = user_query.lower()
         is_urgent = any(word in lower_query for word in ["suïcidi", "matar", "violació", "abús sexual", "no vull viure"])
@@ -184,7 +180,8 @@ class BresolIntakeAnalyzer:
             risk_category="unknown",
             detected_indicators=[],
             missing_information=[],
-            reporting_mode="unknown",
+            missing_minimum_elements=[],
+            reporting_mode=self._safe_reporting_mode(reporting_mode),
             reporter_role="unknown",
             victim_identified=False,
             aggressor_identified=False,

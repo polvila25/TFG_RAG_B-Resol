@@ -14,11 +14,13 @@ ResponseType = Literal[
     "urgent_protection",
     "collect_minimum_information",
     "safe_identification_guidance",
+    "anonymous_protocol",
     "protocol_with_missing_info",
     "protocol_response",
     "legal_support",
     "mixed_response",
     "insufficient_context",
+    "out_of_scope",
 ]
 
 
@@ -30,6 +32,7 @@ class BresolIntakeAnalysis:
     
     detected_indicators: List[str] = field(default_factory=list)
     missing_information: List[str] = field(default_factory=list)
+    missing_minimum_elements: List[str] = field(default_factory=list)
     
     reporting_mode: ReportingMode = "unknown"
     reporter_role: ReporterRole = "unknown"
@@ -44,6 +47,7 @@ class BresolIntakeAnalysis:
     notes: Optional[str] = None
 
 
+
 @dataclass
 class MissingParameter:
     parameter_name: str
@@ -56,7 +60,7 @@ class MissingParameter:
 class CaseInformationReport:
     completed_parameters: List[str] = field(default_factory=list)
     missing_parameters: List[MissingParameter] = field(default_factory=list)
-    minimum_information_score: int = 0
+    minimum_information_score: float = 0.0
     all_minimum_elements_met: bool = False
 
 

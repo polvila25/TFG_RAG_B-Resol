@@ -18,3 +18,15 @@ class LLMGenerator:
         """
         response = self.chain.invoke(variables)
         return response
+
+    def generate_stream(self, variables: Dict[str, Any]):
+        """
+        Streams the LLM response. Returns a generator yielding strings.
+        """
+        for chunk in self.chain.stream(variables):
+            if isinstance(chunk, str):
+                yield chunk
+            elif hasattr(chunk, "content"):
+                yield chunk.content
+            else:
+                yield str(chunk)

@@ -18,24 +18,19 @@ class ResponsePlanner:
         intake: BresolIntakeAnalysis,
         report: CaseInformationReport,
         query_analysis: QueryAnalysis,
+        is_out_of_scope: bool = False,
     ) -> ResponsePlan:
 
-        # 1. Evaluate Legal / Mixed overrides
-        if query_analysis.query_type == "legal_support":
+        # 1. CONTROL DE CONTEXTO (FUERA DE DOMINIO - PRIORIDAD 1)
+        out_of_scope = is_out_of_scope or getattr(query_analysis, "is_out_of_scope", False)
+        if out_of_scope:
             return ResponsePlan(
-                response_type="legal_support",
-                should_run_documental_rag=True,
-                rag_instructions="Centrar-se exclusivament en l'exposició normativa i legal."
-            )
-            
-        if query_analysis.query_type == "mixed":
-            return ResponsePlan(
-                response_type="mixed_response",
-                should_run_documental_rag=True,
-                rag_instructions="Combinar orientació pràctica d'aplicació amb fonament legal clar."
+                response_type="out_of_scope",
+                should_run_documental_rag=False,
+                rag_instructions="Consulta fora de domini. Rebutjar amb fermesa."
             )
 
-        # 2. Evaluate Urgent Override
+        # 2. RIESGO VITAL URGENTE (PRIORIDAD 2)
         if intake.requires_urgent_review:
             return ResponsePlan(
                 response_type="urgent_protection",
@@ -48,39 +43,58 @@ class ResponsePlanner:
                 rag_instructions="Prioritzar extremadament les mesures d'urgència i protecció física immediata sobre qualsevol altra qüestió."
             )
 
-        # 3. Score-based routing (0 - 10)
-        score = report.minimum_information_score
-
-        if score <= 3:
-            # Too little information to run RAG reliably
-            return ResponsePlan(
-                response_type="collect_minimum_information",
-                should_run_documental_rag=False,
-                rag_instructions="Recopilar la informació mínima essencial sense abrumar."
-            )
-            
-        elif 4 <= score <= 6:
-            # Partial information. We can conditionally run RAG.
-            # If the victim is missing, guide for safe identification
-            has_safe_id = any(mp.parameter_name == "safe_identification" for mp in report.missing_parameters)
-            
-            if has_safe_id:
+        # 3. ALERTA ANÓNIMA (PRIORIDAD 3)
+        if intake.reporting_mode == "anonymous":
+            score = report.minimum_information_score
+            if score < 5:
                 return ResponsePlan(
                     response_type="safe_identification_guidance",
-                    should_run_documental_rag=True, # Partial minimums detected -> conditionally execute RAG
-                    rag_instructions="Oferir orientació protocol·lària base, remarcant la necessitat d'identificar de forma segura l'afectat."
+                    should_run_documental_rag=True,
+                    rag_instructions="Alerta explícitament anònima incompleta (score < 5). Orientació a la indagació psicopedagògica i identificació segura."
                 )
-            else:
+            else: # score >= 5
+                return ResponsePlan(
+                    response_type="anonymous_protocol",
+                    should_run_documental_rag=True,
+                    rag_instructions="Alerta explícitament anònima completa (score >= 5). Protocol d'actuació protegint la identitat de l'emissor."
+                )
+
+        # 4. ALERTA NO ANÓNIMA (PRIORIDAD 4)
+        score = report.minimum_information_score
+
+        # A) Capa de Ley
+        if query_analysis.query_type == "legal_support":
+            return ResponsePlan(
+                response_type="legal_support",
+                should_run_documental_rag=True,
+                rag_instructions="Centrar-se exclusivament en l'exposició normativa i legal."
+            )
+
+        # B) Capa Mixta
+        elif query_analysis.query_type == "mixed":
+            return ResponsePlan(
+                response_type="mixed_response",
+                should_run_documental_rag=True,
+                rag_instructions="Combinar orientació pràctica d'aplicació amb fonament legal clar."
+            )
+
+        # C) Capa de Protocolo
+        else:
+            if score <= 3:
+                return ResponsePlan(
+                    response_type="collect_minimum_information",
+                    should_run_documental_rag=False,
+                    rag_instructions="La informació és insuficient (score <= 3). No es recupera protocol. Sol·licitar dades mínimes amb to proper al menor."
+                )
+            elif 3 < score < 6:
                 return ResponsePlan(
                     response_type="protocol_with_missing_info",
                     should_run_documental_rag=True,
-                    rag_instructions="Orientar en el protocol assumint que hi ha elements a confirmar. Evitar asseveracions absolutes."
+                    rag_instructions="Ambigüitat parcial (3 < score < 6). Executar RAG i incloure guia d'informació restant a confirmar."
                 )
-                
-        else:
-            # Score 7 - 10: Robust context
-            return ResponsePlan(
-                response_type="protocol_response",
-                should_run_documental_rag=True,
-                rag_instructions="Exposar clarament el circuit o protocol d'actuació complet atès el bon context."
-            )
+            else: # score >= 6
+                return ResponsePlan(
+                    response_type="protocol_response",
+                    should_run_documental_rag=True,
+                    rag_instructions="Cas complet (score >= 6). Executar RAG i retornar el protocol de manera directa, neta i executiva."
+                )

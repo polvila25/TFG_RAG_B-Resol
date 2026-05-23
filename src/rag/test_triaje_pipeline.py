@@ -11,13 +11,14 @@ if project_root not in sys.path:
 from src.rag.rag_pipeline import AdvancedRAGPipeline
 
 
-def run_test_case(pipeline: AdvancedRAGPipeline, description: str, query: str):
+def run_test_case(pipeline: AdvancedRAGPipeline, description: str, query: str, reporting_mode: str = "identified"):
     print("\n" + "="*80)
     print(f"TEST CASE: {description}")
     print(f"Query: '{query}'")
+    print(f"Reporting Mode: '{reporting_mode}'")
     print("="*80)
     
-    result = pipeline.run(user_query=query)
+    result = pipeline.run(user_query=query, reporting_mode=reporting_mode)
     
     print("\n=== ANÀLISI DETALLAT ===")
     print(f"• Categoria de risc: {result['bresol_intake'].risk_category}")
@@ -55,15 +56,19 @@ def main():
     pipeline = AdvancedRAGPipeline(gemini_api_key=gemini_api_key, gemini_model=gemini_model)
     
     cases = [
-        ("Cas 1: Alerta amb molt poca informació", "Crec que hi ha un problema amb un alumne."),
-        ("Cas 2: Ciberassetjament / Assetjament sense identitat explícita", "No sé qui és, però al pati a l'hora de l'esmorzar sempre insulten un alumne de 1r ESO."),
-        ("Cas 3: Cas robust per a protocol", "He parlat amb l'alumne. Té 13 anys. Porten dos mesos insultant-lo."),
-        ("Cas 4: Risc Vital / Urgència (Art. 16 LOPIVI)", "Un alumne diu que no vol viure."),
-        ("Cas 5: Consulta purament normativa (Legal support)", "Quina normativa regula l'assetjament?")
+        ("Cas 1: Alerta amb molt poca informació", "Crec que hi ha un problema amb un alumne.", "identified"),
+        ("Cas 2: Ciberassetjament / Assetjament sense identitat explícita", "No sé qui és, però al pati a l'hora de l'esmorzar sempre insulten un alumne de 1r ESO.", "identified"),
+        ("Cas 3: Cas robust per a protocol", "He parlat amb l'alumne. Té 13 anys. Porten dos mesos insultant-lo.", "identified"),
+        ("Cas 4: Risc Vital / Urgència (Art. 16 LOPIVI)", "Un alumne diu que no vol viure.", "identified"),
+        ("Cas 5: Consulta purament normativa (Legal support)", "Quina normativa regula l'assetjament?", "identified"),
+        ("Cas 6: Consulta fora de domini (Out of Scope)", "Qui és el capità del Barça?", "identified"),
+        ("Cas 7: Consulta fora de domini 2 (Out of Scope)", "Quin temps fa?", "identified"),
+        ("Cas 8: Alerta anònima amb poca informació", "He rebut un avís anònim d'un incident al centre.", "anonymous"),
+        ("Cas 9: Alerta anònima molt detallada", "Aquesta alerta és anònima. S'està produint ciberassetjament a un alumne de 2n d'ESO mitjançant Instagram on li diuen de tot i rep insults diaris fa tres setmanes.", "anonymous")
     ]
 
-    for desc, query in cases:
-        run_test_case(pipeline, desc, query)
+    for desc, query, rep_mode in cases:
+        run_test_case(pipeline, desc, query, rep_mode)
 
 
 if __name__ == "__main__":

@@ -31,19 +31,31 @@ class CaseInformationEvaluator:
         for idx, element in enumerate(minimum_elements):
             is_missing = False
             
-            # Heuristics to check if an element is missing
-            if "victima" in element or "afectat" in element:
+            # 1. Direct check from LLM-identified missing keys
+            if element in intake.missing_minimum_elements:
+                is_missing = True
+            # 2. Strict check for victim
+            elif "victima" in element or "afectat" in element:
                 is_missing = not intake.victim_identified
             else:
+                # 3. Check against general free-text missing information list
                 element_clean = element.replace("_", " ")
                 for missing_str in llm_missing:
                     if element_clean in missing_str or missing_str in element_clean:
                         is_missing = True
                         break
                 
-                # If query is too short and no indicators, assume missing
-                if len(intake.detected_indicators) == 0 and len(intake.original_query.split()) < 8:
-                    is_missing = True
+                # 4. Strict length fallback: queries under 12 words with generic statements
+                # lack sufficient detail to prove intent, repetition, or power imbalance.
+                # This strict validation only applies if the alert is explicitly anonymous.
+                if intake.reporting_mode == "anonymous" and len(intake.original_query.split()) < 12:
+                    query_lower = intake.original_query.lower()
+                    if element == "repeticio_temporal" and not any(w in query_lower for w in ["sempre", "repetit", "cada dia", "fa temps", "mesos", "setmanes", "diari", "habitual"]):
+                        is_missing = True
+                    elif element == "desequilibri_poder" and not any(w in query_lower for w in ["grup", "més fort", "més gran", "popular", "superior", "abús", "abus", "amenaça", "intimid"]):
+                        is_missing = True
+                    elif element == "intencionalitat" and not any(w in query_lower for w in ["volen", "vol", "adrede", "a propòsit", "intencionat", "per fer mal"]):
+                        is_missing = True
 
             if is_missing:
                 # Dynamically retrieve matching questions from the config
@@ -102,7 +114,7 @@ class CaseInformationEvaluator:
         intake: BresolIntakeAnalysis, 
         completed_elements_count: int, 
         total_elements_count: int
-    ) -> int:
+    ) -> float:
         score = 0.0
         
         # 1. Base score from completing minimum elements (up to 5 points)
@@ -122,5 +134,5 @@ class CaseInformationEvaluator:
             score += 1.0
             
         # Ensure it doesn't exceed 10
-        final_score = int(min(round(score), 10))
+        final_score = round(min(score, 10.0), 1)
         return final_score

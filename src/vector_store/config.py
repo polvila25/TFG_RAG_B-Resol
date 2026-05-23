@@ -22,13 +22,14 @@ QDRANT_LOCAL_PATH = PROJECT_ROOT / "storage" / "qdrant"
 # ============================================================
 # QDRANT CONFIG
 # ============================================================
+import os
 
 # Modo actual recomendado para desarrollo:
-QDRANT_MODE = "local"
+QDRANT_MODE = os.getenv("QDRANT_MODE", "local")
 
 # Futuro modo Docker/servidor:
-QDRANT_HOST = "localhost"
-QDRANT_PORT = 6333
+QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
+QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
 
 COLLECTION_NAME = "bresol_knowledge_base_minilm"
 

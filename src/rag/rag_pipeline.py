@@ -82,7 +82,7 @@ class AdvancedRAGPipeline:
         print(f"      [Time] Retrieve: {t_retrieve:.3f}s | Rerank: {t_rerank:.3f}s")
         return reranked_chunks
 
-    def run(self, user_query: str) -> Dict[str, Any]:
+    def run(self, user_query: str, reporting_mode: str = "identified", student_metadata: dict = None) -> Dict[str, Any]:
         print("="*60)
         print("INICIANT PIPELINE RAG + TRIAJE")
         print("="*60)
@@ -91,7 +91,7 @@ class AdvancedRAGPipeline:
         
         # 1. Bresol Intake & Evaluation
         print("[1/6] Analitzant consulta amb Bresol Intake...")
-        bresol_analysis = self.intake_analyzer.analyze(user_query)
+        bresol_analysis = self.intake_analyzer.analyze(user_query, reporting_mode)
         case_report = self.evaluator.evaluate(bresol_analysis)
         
         print(f"      - Risc: {bresol_analysis.risk_category} | Score Info: {case_report.minimum_information_score}/10")
@@ -102,7 +102,12 @@ class AdvancedRAGPipeline:
         
         # 3. Response Planning (Routing)
         print("[3/6] Planificant ruta de resposta...")
-        response_plan = self.planner.plan(bresol_analysis, case_report, query_analysis)
+        response_plan = self.planner.plan(
+            bresol_analysis,
+            case_report,
+            query_analysis,
+            is_out_of_scope=query_analysis.is_out_of_scope
+        )
         print(f"      - Tipus Resposta: {response_plan.response_type} | RAG Actiu: {response_plan.should_run_documental_rag}")
         
         # 4. Building Teacher Guidance (CNV, Empathy, Limits)
@@ -134,10 +139,19 @@ class AdvancedRAGPipeline:
             context = self.context_builder.build(final_chunks)
         else:
             print("\n[4/6] Recuperació RAG Omesa (Planificador).")
-
+ 
         # 6. LLM Generation
         print("[5/6] Generant resposta amb Prompt Dinàmic...")
-        dynamic_prompt = get_prompt(response_plan.response_type)
+        dynamic_prompt = get_prompt(
+            response_type=response_plan.response_type,
+            risk_category=bresol_analysis.risk_category,
+            reporting_mode=bresol_analysis.reporting_mode,
+            info_score=case_report.minimum_information_score,
+            query_type=query_analysis.query_type,
+            is_out_of_scope=query_analysis.is_out_of_scope,
+            requires_urgent_review=bresol_analysis.requires_urgent_review,
+            student_metadata=student_metadata,
+        )
         generator = LLMGenerator(self.gemini_api_key, self.gemini_model, dynamic_prompt)
         
         variables = {
@@ -147,12 +161,25 @@ class AdvancedRAGPipeline:
             "risk_category": bresol_analysis.risk_category,
             "bresol_detected_indicators": _format_list(bresol_analysis.detected_indicators),
             "empathy_statement": teacher_guidance.empathy_statement,
+            "opening_phrases": teacher_guidance.empathy_statement,
+            "tone_recommendation": teacher_guidance.empathy_statement,
             "recommended_questions": _format_list(teacher_guidance.recommended_questions),
             "avoid_questions": _format_list(teacher_guidance.avoid_questions),
             "urgent_actions": _format_list(response_plan.urgent_actions),
+            "safety_notes": _format_list(response_plan.urgent_actions) if response_plan.urgent_actions else "No s'han especificat indicacions especials de seguretat.",
+            "missing_information": _format_list(bresol_analysis.missing_information) if bresol_analysis.missing_information else _format_list([m.replace("_", " ").capitalize() for m in bresol_analysis.missing_minimum_elements]),
+            "reporting_mode": bresol_analysis.reporting_mode,
+            "victim_identified": "Sí" if bresol_analysis.victim_identified else "No",
+            "identification_status": "Anònim" if bresol_analysis.reporting_mode == "anonymous" else ("Identificat" if bresol_analysis.reporting_mode == "identified" else "Desconegut"),
         }
         
-        answer = generator.generate(variables)
+        # Filtrem les variables perquè només s'enviïn les que el prompt específic requereix
+        filtered_variables = {
+            k: v for k, v in variables.items() 
+            if k in dynamic_prompt.input_variables
+        }
+        
+        answer = generator.generate(filtered_variables)
         
         t_total = time.time() - t_total_start
         print(f"PIPELINE FINALITZAT en {t_total:.3f}s")

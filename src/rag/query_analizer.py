@@ -81,6 +81,7 @@ Analitzar la consulta inicial d'un docent o responsable de convivència i extreu
 7. nivell de seguretat orientatiu
 8. si requereix revisió humana
 9. una pista breu per enriquir la query semàntica
+10. si la consulta és fora de domini (no relacionada amb convivència escolar, assetjament, salut mental o normatives educatives)
 
 Tipus de consulta permesos:
 - application: pregunta què fer, com actuar, quin protocol activar, quines mesures aplicar.
@@ -149,6 +150,7 @@ Retorna exactament aquest JSON:
   "detected_keywords": ["keyword 1", "keyword 2"],
   "safety_level": "low | medium | high | critical | unknown",
   "requires_human_review": true,
+  "is_out_of_scope": true | false,
   "enriched_query_hint": "frase breu en català per ajudar a recuperar documents",
   "notes": "comentari breu o null"
 }}
@@ -217,6 +219,7 @@ class QueryAnalyzer:
                 enriched_query_hint=normalized["enriched_query_hint"],
                 analyzer_used="llm",
                 notes=normalized["notes"],
+                is_out_of_scope=normalized["is_out_of_scope"],
             )
 
         except Exception as exc:
@@ -311,6 +314,11 @@ class QueryAnalyzer:
             default=True,
         )
 
+        is_out_of_scope = self._safe_bool(
+            data.get("is_out_of_scope"),
+            default=False,
+        )
+
         enriched_query_hint = data.get("enriched_query_hint")
         if not isinstance(enriched_query_hint, str) or not enriched_query_hint.strip():
             enriched_query_hint = self._build_basic_enriched_hint(
@@ -350,6 +358,7 @@ class QueryAnalyzer:
             "requires_human_review": requires_human_review,
             "enriched_query_hint": enriched_query_hint,
             "notes": notes,
+            "is_out_of_scope": is_out_of_scope,
         }
 
     def _safe_choice(
@@ -481,6 +490,12 @@ class QueryAnalyzer:
             query_type=query_type,
         )
 
+        # Heuristic check for out of scope:
+        is_out_of_scope = False
+        out_of_scope_keywords = ["barça", "temps fa", "guerra", "capità", "capita", "futbol", "temps", "història d", "historia d", "qui és el", "qui es el", "quin temps"]
+        if risk_category == "unknown" and any(term in query_lower for term in out_of_scope_keywords):
+            is_out_of_scope = True
+
         return QueryAnalysis(
             original_query=user_query,
             query_type=query_type,
@@ -499,6 +514,7 @@ class QueryAnalyzer:
             enriched_query_hint=enriched_query_hint,
             analyzer_used="fallback",
             notes=f"Fallback per regles. Error LLM: {error}",
+            is_out_of_scope=is_out_of_scope,
         )
 
 
