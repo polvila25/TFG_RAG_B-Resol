@@ -18,5 +18,9 @@ qdrant-client>=1.10.0
 langchain-qdrant>=0.1.0
 
 # Utilidades
-python-dotenv>=1.0.1
-streamlit>=1.38.0
+python-dotenv==1.2.2
+streamlit==1.35.0
+
+# Google Sheets Integration
+gspread>=6.0.0
+google-auth>=2.0.0
