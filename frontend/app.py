@@ -170,11 +170,38 @@ for i, message in enumerate(st.session_state.messages):
                             # --- GUARDAR EN GOOGLE SHEETS ---
                             try:
                                 import gspread
-                                # Connectem usant l'arxiu JSON que m'has indicat
-                                gc = gspread.service_account(filename="avaluacion-tfg-bresol-key.json")
-                                # Obrim l'Excel (Assegurat d'haver creat un Excel amb aquest nom exacte al teu Drive i d'haver-lo compartit amb el correu del JSON)
+                                import os
+                                
+                                # Comprovem si estem en local (el fitxer existeix) o al núvol (fem servir secrets)
+                                if os.path.exists("avaluacion-tfg-bresol-key.json"):
+                                    # Entorn Local
+                                    gc = gspread.service_account(filename="avaluacion-tfg-bresol-key.json")
+                                else:
+                                    # Entorn Streamlit Cloud
+                                    # Converteix els secrets de Streamlit a un diccionari que entén Google
+                                    credentials_dict = dict(st.secrets["gcp_service_account"])
+                                    gc = gspread.service_account_from_dict(credentials_dict)
+                                    
+                                # Obrim l'Excel
                                 sh = gc.open("B-Resol Feedback") 
                                 worksheet = sh.sheet1
+                                
+                                worksheet.append_row([
+                                    feedback_data["timestamp"],
+                                    feedback_data["original_query"],
+                                    feedback_data["generated_response"],
+                                    feedback_data["predicted_risk_category"],
+                                    val_global,
+                                    cat_correcta,
+                                    cat_suggerida,
+                                    gestio_info,
+                                    utilitat,
+                                    to_adequat,
+                                    preguntes_xat,
+                                    comentari
+                                ])
+                            except Exception as gs_err:
+                                st.error(f"Error enviant a Google Sheets: {gs_err}")
                                 
                                 worksheet.append_row([
                                     feedback_data["timestamp"],
