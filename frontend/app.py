@@ -8,6 +8,8 @@ if project_root not in sys.path:
 
 import streamlit as st
 import os
+import json
+from datetime import datetime
 from dotenv import load_dotenv
 from src.rag.pipeline_v2 import AdvancedRAGPipeline
 
@@ -97,12 +99,110 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # Mostrar el historial del chat
-for message in st.session_state.messages:
+for i, message in enumerate(st.session_state.messages):
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
         if "metadata" in message:
             with st.expander("👁️ Veure anàlisi i fonts recuperades"):
                 st.markdown(message["metadata"])
+                
+        # Formulari d'avaluació per a l'últim missatge de l'assistent
+        if message["role"] == "assistant" and i == len(st.session_state.messages) - 1:
+            if not message.get("feedback_submitted", False) and "original_query" in message:
+                with st.expander("📝 Avaluar aquesta resposta (Opcional)", expanded=False):
+                    with st.form(key=f"feedback_form_{i}"):
+                        st.markdown("### Avaluació de la resposta")
+                        
+                        val_global = st.slider("1. Valoració global de la resposta:", 1, 10, 5)
+                        
+                        cat_correcta = st.radio(
+                            f"2. La categoria de risc detectada ({message.get('risk_category', 'Desconeguda')}) és correcta?",
+                            ["Sí", "Parcialment", "No", "No ho sé"]
+                        )
+                        
+                        cat_suggerida = st.selectbox(
+                            "3. Si no és correcta, quina categoria hauria de ser?",
+                            ["Selecciona una opció...", "conducta_suicida", "violencia_sexual", "tca", "assetjament_escolar", "ciberassetjament", "maltractament_infantil", "consum_substancies", "vandalisme", "general"],
+                            index=0
+                        )
+                        
+                        gestio_info = st.radio(
+                            "4. El sistema ha gestionat bé el nivell d'informació disponible?",
+                            [
+                                "Sí, ha respost directament correctament",
+                                "Sí, ha demanat més informació quan calia",
+                                "Parcialment",
+                                "No, ha respost massa aviat",
+                                "No, ha demanat informació innecessària"
+                            ]
+                        )
+                        
+                        utilitat = st.slider("5. La resposta és útil per al docent?", 1, 10, 5)
+                        to_adequat = st.slider("6. El to és adequat per a una situació sensible amb menors?", 1, 10, 5)
+                        
+                        preguntes_xat = st.radio(
+                            "7. Les preguntes proposades pel xat b-resol són adequades?",
+                            ["Sí", "Parcialment", "No", "No aplica"]
+                        )
+                        
+                        comentari = st.text_area("8. Comentari o millora suggerida:")
+                        
+                        submit_button = st.form_submit_button("Enviar valoració")
+                    
+                        if submit_button:
+                            feedback_data = {
+                                "timestamp": datetime.now().isoformat(),
+                                "original_query": message["original_query"],
+                                "generated_response": message["content"],
+                                "predicted_risk_category": message.get("risk_category", ""),
+                                "feedback": {
+                                    "valoracio_global": val_global,
+                                    "categoria_correcta": cat_correcta,
+                                    "categoria_suggerida": cat_suggerida if cat_suggerida != "Selecciona una opció..." else None,
+                                    "gestio_informacio": gestio_info,
+                                    "utilitat": utilitat,
+                                    "to_adequat": to_adequat,
+                                    "preguntes_xat": preguntes_xat,
+                                    "comentari": comentari
+                                }
+                            }
+                            
+                            # --- GUARDAR EN GOOGLE SHEETS ---
+                            try:
+                                import gspread
+                                # Connectem usant l'arxiu JSON que m'has indicat
+                                gc = gspread.service_account(filename="avaluacion-tfg-bresol-key.json")
+                                # Obrim l'Excel (Assegurat d'haver creat un Excel amb aquest nom exacte al teu Drive i d'haver-lo compartit amb el correu del JSON)
+                                sh = gc.open("B-Resol Feedback") 
+                                worksheet = sh.sheet1
+                                
+                                worksheet.append_row([
+                                    feedback_data["timestamp"],
+                                    feedback_data["original_query"],
+                                    feedback_data["generated_response"],
+                                    feedback_data["predicted_risk_category"],
+                                    val_global,
+                                    cat_correcta,
+                                    cat_suggerida,
+                                    gestio_info,
+                                    utilitat,
+                                    to_adequat,
+                                    preguntes_xat,
+                                    comentari
+                                ])
+                            except Exception as gs_err:
+                                st.error(f"Error enviant a Google Sheets: {gs_err}")
+                                
+                            # --- GUARDAR EN LOCAL (Comentat segons la petició) ---
+                            # eval_dir = Path("data/evaluations")
+                            # eval_dir.mkdir(parents=True, exist_ok=True)
+                            # with open(eval_dir / "feedback_log.jsonl", "a", encoding="utf-8") as f:
+                            #     f.write(json.dumps(feedback_data, ensure_ascii=False) + "\n")
+                            
+                            # Actualitzar estat per ocultar formulari
+                            st.session_state.messages[i]["feedback_submitted"] = True
+                            st.success("Valoració enviada correctament. Gràcies per ajudar-nos a millorar!")
+                            st.rerun()
 
 # Input de usuario
 if prompt := st.chat_input("Fes la teva consulta sobre els protocols..."):
@@ -163,8 +263,12 @@ if prompt := st.chat_input("Fes la teva consulta sobre els protocols..."):
                 st.session_state.messages.append({
                     "role": "assistant", 
                     "content": response_text,
-                    "metadata": metadata_md
+                    "metadata": metadata_md,
+                    "original_query": prompt,
+                    "risk_category": result['analysis'].risk_category,
+                    "feedback_submitted": False
                 })
+                st.rerun()
                         
             except Exception as e:
                 response_text = f"❌ Error en processar la consulta: {e}"

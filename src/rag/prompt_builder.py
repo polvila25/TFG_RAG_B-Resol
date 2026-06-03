@@ -104,20 +104,42 @@ INFORMACIÓ DE LA CONSULTA (ANÒNIMA)
 ==================================================
 Consulta: {user_query}
 Context recuperat (si n'hi ha): {answer_context}
+Informació que falta confirmar: {missing_information}
 
 ==================================================
 FORMAT DE RESPOSTA OBLIGATORI
 ==================================================
-1. Avís de Privacitat i Facilitació del Xat 
-- Recorda que cal respectar l'anonimat i evitar preguntes directes sobre noms o dades identificatives. L'objectiu és obtenir pistes contextuals suficients per protegir l'alumne sense exposar-lo.
-- Comporta't com a facilitador del xat segur de b-resol. Indica al docent que usi aquest to: {tone_recommendation}.
+1. Valoració inicial i Avís de Privacitat
+- Explica quin procediment preventiu s'aplica basant-te en el context.
+- Afegeix un avís explícit sobre l'anonimat: "Com que l'alerta és anònima, recordem que cal respectar l'anonimat i evitar preguntes directes sobre noms o dades identificatives. L'objectiu és obtenir pistes contextuals suficients per protegir l'alumne sense exposar-lo."
 
-2. Indagació segura i perifèrica
+2. Actuacions recomanades segons el protocol (Preventives)
+
+- Desenvolupa el cos principal de la resposta en passos clars, ordenats i accionables.
+- Prioritza les accions generals (ex. supervisió a patis) que no requereixen la identitat de l'alumne.
+- No presentis recomanacions genèriques: cada actuació ha d'estar vinculada al context documental recuperat.
+
+Organitza obligatòriament aquesta secció en tres blocs:
+
+   a) Mesures immediates de protecció i contenció (Preventives)
+   - Indica què hauria de fer el centre de manera prioritària a nivell d'espais o grups afectats.
+   - CITA el document i la pàgina per a cada mesura.
+
+   b) Activació del circuit o protocol corresponent
+   - Explica quin procediment general es pot activar amb la informació disponible.
+   - CITA el document i la pàgina per a cada pas.
+
+   c) Seguiment, registre i coordinació
+   - Indica com s'hauria de fer l'observació o registre d'incidències per intentar identificar el cas de manera orgànica sense forçar-ho.
+   - CITA el document i la pàgina per a cada actuació.
+
+- Si el context documental no permet justificar algun pas, no l'inventis.
+
+3. Guia d'informació a confirmar (Indagació segura i perifèrica pel Xat)
+- Llista els elements importants que falten confirmar.
 - Proposa utilitzar aquestes preguntes pel xat per demanar pistes de context (curs, lloc, hora) sense demanar noms: {recommended_questions}.
+- Comporta't com a facilitador del xat segur de b-resol. Indica al docent que usi aquest to: {tone_recommendation}.
 - Preguntes totalment prohibides: {avoid_questions}.
-
-3. Orientació preventiva general
-- Si hi ha context documental, proposa accions generals (ex. supervisió a patis) que no requereixin la identitat de l'alumne. CITA DOCUMENT I PÀGINA.
 """
 
 ANONYMOUS_CHAT_GUIDANCE_PROMPT = SAFE_IDENTIFICATION_PROMPT
@@ -133,18 +155,38 @@ Context recuperat: {answer_context}
 ==================================================
 FORMAT DE RESPOSTA OBLIGATORI
 ==================================================
-1. Avís Crític de Privacitat i Anonimat
-- L'usuari ha indicat que l'alerta és anònima, però ha aportat un nivell de detall alt. Per complir la LOPIVI, s'ha de protegir la seva identitat mentre s'aplica el protocol amb les dades proporcionades.
+1. Valoració inicial i Avís Crític de Privacitat
+- Presenta una valoració professional del cas.
+- Afegeix un avís explícit sobre l'anonimat: "L'usuari ha indicat que l'alerta és anònima, però ha aportat un nivell de detall alt. Per complir la normativa (ex. LOPIVI), s'ha de protegir la seva identitat mentre s'aplica el protocol amb les dades proporcionades."
 
-2. Circuit d'actuació (Protocol Oficial)
-- Basant-te en el context documental, exposa les mesures de protecció immediata i procediment a seguir amb la situació descrita, els espais, franges horàries o grups indicats, evitant exposar la persona alertant. CITA DOCUMENT I PÀGINA.
+2. Actuacions recomanades segons el protocol
 
-3. Ús del xat b-resol (Només contenció)
-- Suggereix al docent que utilitzi el xat EXCLUSIVAMENT per agrair la informació, usant aquesta frase: {opening_phrases}.
-- Adverteix expressament que NO faci més preguntes investigadores ({avoid_questions}), ja que disposem de dades per actuar al centre.
+- Desenvolupa el cos principal de la resposta en passos clars, ordenats i accionables respectant la confidencialitat.
+- Prioritza sempre la protecció de l'alumne i la contenció de la situació evitant exposar la persona alertant.
+- No presentis recomanacions genèriques: cada actuació ha d'estar vinculada al context documental recuperat.
 
-4. Notes de Seguretat
-- {safety_notes}
+Organitza obligatòriament aquesta secció en tres blocs:
+
+   a) Mesures immediates de protecció i contenció
+   - Indica què hauria de fer el centre de manera prioritària.
+   - Inclou actuacions com l'acompanyament, preservació de seguretat, i reducció de l'exposició als espais indicats en la mesura del possible sense identificar.
+   - CITA el document i la pàgina per a cada mesura.
+
+   b) Activació del circuit o protocol corresponent
+   - Explica quin circuit o protocol s'hauria d'activar.
+   - Indica quins agents del centre haurien d'intervenir mantenint la discreció.
+   - CITA el document i la pàgina per a cada pas.
+
+   c) Seguiment, registre i coordinació
+   - Indica com s'hauria de fer el seguiment del cas i la documentació protegint l'anonimat de la font.
+   - CITA el document i la pàgina per a cada actuació.
+
+- Si el context documental no permet justificar algun pas, no l'inventis.
+
+3. Ús del xat b-resol i notes de seguretat
+- Suggereix al docent que utilitzi el xat EXCLUSIVAMENT per agrair la informació i establir contenció, usant aquesta frase: {opening_phrases}.
+- Adverteix expressament que NO faci més preguntes investigadores ({avoid_questions}), ja que es disposa de dades per actuar al centre.
+- Afegeix notes de seguretat: {safety_notes}
 """
 
 # C1) PROTOCOL AMB AMBIGÜITAT PARCIAL (Entre 3 i 5.9): Actuació + Confirmació
