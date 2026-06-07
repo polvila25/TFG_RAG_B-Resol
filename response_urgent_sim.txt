@@ -1,0 +1,39 @@
+QUERY: Veig a Pol cada dia a la sortida, uns nens li fan mal a posta i li diuen de tot
+URGENCY_LEVEL: high
+IMPLICATED: True
+FEATURES: ['violència física', 'assetjament escolar']
+========================================
+1. **Valoració de la situació**
+
+Aquesta situació es classifica amb un nivell d'urgència **ALTA**. La presència de violència física manifesta i l'assetjament verbal continuat a la sortida del centre educatiu indiquen un risc imminent per a la integritat del menor. Segons el *Protocol d'actuació davant de qualsevol tipus de violència en l'àmbit educatiu*, la concurrència d'intencionalitat de fer mal i el desequilibri de poder fan que s'hagi d'actuar de forma contundent i immediata per protegir la víctima.
+
+2. **Actuacions recomanades segons el protocol**
+
+**a) Mesures immediates de protecció i contenció**
+- **Aplica mesures de contenció i custòdia de l'alumne de forma immediata** per garantir la seva seguretat física a la sortida del centre, tal com estableix el *Protocol d'actuació davant de qualsevol tipus de violència en l'àmbit educatiu* a la pàgina 14.
+- **Assigna un referent de protecció** que acompanyi l'alumne en els espais i horaris de risc detectats (la sortida del centre) per reduir l'exposició a l'agressió.
+- **Documenta aquesta intervenció inicial** a l'apartat d'**Actuaciones** de b-resol per deixar constància de la resposta urgent del centre.
+
+**b) Activació del circuit o protocol corresponent**
+- **Informa immediatament la direcció del centre** per activar formalment el protocol d'assetjament escolar, ja que existeixen indicis clars de violència física i reiteració segons el *Protocol d'actuació davant de qualsevol tipus de violència en l'àmbit educatiu*.
+- **Identifica els implicats** (presumptes agressors i testimonis) utilitzant la secció d'**Identificació** de la plataforma i etiqueta els fets a **Característiques** (violència física, insults, espai públic).
+- **Convoca la Comissió de Convivència** o l'equip de referents per valorar la gravetat dels fets i coordinar la intervenció amb les famílies implicades.
+
+**c) Seguiment, registre i coordinació**
+- **Registra cronològicament totes les actuacions** derivades d'aquest cas a b-resol per complir amb l'obligació de traçabilitat que marca el protocol a la pàgina 14.
+- **Utilitza l'Historial PDF** per disposar de l'expedient complet i actualitzat en cas que la Inspecció Educativa el requereixi.
+- **Convida un "Specialist"** a través de la plataforma si l'equip directiu considera que la gravetat de la violència física requereix un assessorament extern especialitzat.
+
+3. **Guia d'informació a confirmar (Xat b-resol) i seguiment**
+
+És necessari obtenir detalls perifèrics per ajustar les mesures de protecció sense comprometre la privàcia del denunciant. Utilitza el **Xat** de b-resol amb la següent frase empàtica d'inici: *"Entenc que és una situació difícil i estem aquí per ajudar-te."*
+
+Preguntes a realitzar:
+- Amb quina freqüència ocorren aquests fets a la sortida?
+- Hi ha algun espai concret fora del centre on se senti més vulnerable?
+- Hi ha hagut algun incident similar dins de l'horari lectiu o a través de xarxes socials?
+- Saps si hi ha altres companys que hagin vist el que passa?
+
+4. **Coordinació i tancament executiu**
+
+Procedeix a la comunicació formal amb la Inspecció Educativa un cop realitzada la primera valoració per part de la direcció. Mantén el registre d'incidències actualitzat diàriament a b-resol per assegurar el seguiment de les mesures de custòdia aplicades i la seva efectivitat en la protecció de l'alumne.

@@ -1,0 +1,42 @@
+QUERY: Pol té problemes a la sortida
+URGENCY_LEVEL: ambiguous
+IMPLICATED: True
+FEATURES: ['conflicte', 'sospita']
+========================================
+A continuació es presenta la valoració normativa i l'estratègia d'actuació per al cas detectat:
+
+### 1. Valoració inicial d'informació insuficient i orientació preliminar
+
+La situació detectada presenta un nivell d'urgència **Ambigua**. Segons el *Protocol d'actuació davant de qualsevol tipus de violència en l'àmbit educatiu de la Generalitat de Catalunya*, les dades actuals són insuficients per determinar si es tracta d'un cas d'assetjament escolar, ja que cal una valoració rigorosa de la reiteració, la intencionalitat de fer mal i, especialment, el desequilibri de poder. Tot i que s'han identificat indicis com "cops o empentes" i "aïllament al pati", la naturalesa dels "problemes a la sortida" encara és massa vaga per activar un protocol formal d'assetjament sense una indagació prèvia.
+
+Com indica el document de la Generalitat, quan la informació inicial és poc precisa, és imperatiu obrir canals de comunicació i observació abans d'estructurar actuacions definitives. Per tant, l'orientació preliminar se centra en la protecció de l'alumne i la clarificació dels fets, mantenint una actitud vigilant davant de qualsevol signe de vulnerabilitat.
+
+**ACCIÓ PRIORITÀRIA Nº 1 (Urgent):** És fonamental que el primer pas a realitzar sigui la indagació mitjançant el **Xat de b-resol** i la revisió del **Dashboard** per consultar l'històric d'alertes de l'alumne. Has de validar els indicis i determinar la freqüència dels fets abans d'activar cap mesura formal del protocol escolar al centre.
+
+---
+
+### 2. Estratègia d'aproximació i To (Xat b-resol)
+
+Per interactuar amb l'alumne, mantingues un to de suport institucional però extremadament proper, evitant qualsevol biaix de judici. L'objectiu és que se senti protegit davant el possible desequilibri de poder.
+
+*   **Frase d'obertura empàtica al xat:** "Entenc que és una situació difícil i estem aquí per ajudar-te."
+
+---
+
+### 3. Sol·licitud de dades mínimes
+
+Com a docent, has de recollir la informació indispensable per a la traçabilitat del cas sense aclaparar el menor. Utilitza exclusivament aquestes preguntes al xat:
+
+*   **Pots descriure què va passar?** (Per identificar la tipologia de violència).
+*   **Amb quina freqüència ocorre?** (Per determinar si hi ha reiteració, clau en el protocol d'assetjament).
+
+**ADVERTÈNCIA DE SEGURETAT:** No utilitzis mai preguntes com *"És culpa teva?"* o *"Per què no ho vas dir abans?"*. Aquestes qüestions responsabilitzen la víctima i vulneren els principis de la LOPIVI i els protocols de protecció.
+
+---
+
+### 4. Notes de seguretat i accions de traçabilitat
+
+*   **Mesura de contenció immediata:** Com a segon pas indispensable, has d'**assegurar l'acompanyament a les sortides** de l'alumne per garantir la seva integritat física i emocional mentre s'esclareixen els fets.
+*   **Registre i Documentació:** Procedeix a registrar els implicats a l'apartat d'**Identificació** i etiqueta els fets (violència física, exclusió) a **Característiques**. 
+*   **Cronologia:** Documenta cada pas a **Actuacions** (reunions, observacions al pati) per garantir la traçabilitat davant d'una possible intervenció de la Inspecció Educativa. 
+*   **Custòdia:** Si la indagació confirma la gravetat, recorda que, segons la pàgina 14 del *Protocol d'actuació davant de qualsevol tipus de violència*, la direcció té l'obligació d'aplicar mesures immediates de custòdia.

@@ -82,6 +82,9 @@ Analitzar la consulta inicial d'un docent o responsable de convivència i extreu
 8. si requereix revisió humana
 9. una pista breu per enriquir la query semàntica
 10. si la consulta és fora de domini (no relacionada amb convivència escolar, assetjament, salut mental o normatives educatives)
+11. nivell d'urgència (urgency_level)
+12. presència de parts implicades (has_implicated_parties)
+13. característiques o etiquetes detectades (detected_features)
 
 Tipus de consulta permesos:
 - application: pregunta què fer, com actuar, quin protocol activar, quines mesures aplicar.
@@ -115,7 +118,7 @@ Categories de risc permeses:
 - general
 - unknown
 
-Criteris orientatius:
+Criteris orientatius de risc:
 - Si pregunta "què he de fer", "com actuar", "quin protocol", classifica com application.
 - Si pregunta "quina llei", "base legal", "normativa", classifica com legal_support.
 - Si demana actuació i llei, classifica com mixed.
@@ -130,12 +133,25 @@ Criteris orientatius:
 - Si parla de discriminació, racisme, odi, origen, religió, orientació sexual o identitat de gènere, pot ser conductes_odi_discriminacio.
 - Si parla d'un menor de 13 anys, menor de 14 anys o infracció penal, pot ser menor_14_infraccio_penal.
 
-Nivell de seguretat:
+Nivells de seguretat (safety_level):
 - critical: risc immediat, suïcidi, autolesió greu, abús sexual, violència greu, amenaça greu.
 - high: possible risc seriós però sense immediatesa clara.
 - medium: situació sensible que requereix seguiment.
 - low: consulta general o normativa sense risc immediat.
 - unknown: no es pot valorar.
+
+Nivells d'urgència (urgency_level):
+- high: Presència d'amenaces explícites de mal inminent, violència física continuada, intencions d'autolesió o conductes crítiques immediates.
+- ambiguous: La consulta és molt curta, incompleta o indica sospita/malestar sense donar detalls clars del què, qui, quan o on (ej. "Pol té problemes a la sortida", "Un alumne ho passa malament").
+- medium: Incident identificat d'intensitat moderada que requereix atenció, però sense risc vital o físic immediat.
+- low: Consulta general de caràcter informatiu, normatiu o preventiu sense urgència real.
+
+Presència de parts implicades (has_implicated_parties):
+- true: Si es fa referència a persones concretes implicades, ja sigui per nom propi (ej. "Pol", "Joan"), pronoms personals o descripcions de grups/persones (ej. "uns nens del seu curs", "el tutor", "una companya de classe").
+- false: Si la consulta és purament abstracta o general, sense anomenar ni referenciar cap persona o grup de persones físiques en la situació actual.
+
+Característiques detectades (detected_features):
+- Llista d'etiquetes en català associades als fets descrits (ej. "violència física", "exclusió", "ciberassetjament", "insults", "agressió verbal", "autolesió", "assetjament", "sospita"). Si no n'hi ha cap, retorna llista buida [].
 
 Retorna exactament aquest JSON:
 
@@ -145,11 +161,14 @@ Retorna exactament aquest JSON:
   "risk_category": "categoria permesa",
   "secondary_risk_categories": ["categoria permesa"],
   "confidence": "low | medium | high",
-  "needs_legal_support": true,
+  "needs_legal_support": true | false,
   "detected_indicators": ["indicador 1", "indicador 2"],
   "detected_keywords": ["keyword 1", "keyword 2"],
   "safety_level": "low | medium | high | critical | unknown",
-  "requires_human_review": true,
+  "urgency_level": "high | medium | low | ambiguous",
+  "has_implicated_parties": true | false,
+  "detected_features": ["etiqueta 1", "etiqueta 2"],
+  "requires_human_review": true | false,
   "is_out_of_scope": true | false,
   "enriched_query_hint": "frase breu en català per ajudar a recuperar documents",
   "notes": "comentari breu o null"
@@ -218,6 +237,9 @@ class QueryAnalyzer:
                 detected_keywords=normalized["detected_keywords"],
                 enriched_query_hint=normalized["enriched_query_hint"],
                 analyzer_used="llm",
+                urgency_level=normalized["urgency_level"],
+                has_implicated_parties=normalized["has_implicated_parties"],
+                detected_features=normalized["detected_features"],
                 notes=normalized["notes"],
                 is_out_of_scope=normalized["is_out_of_scope"],
             )
@@ -319,6 +341,21 @@ class QueryAnalyzer:
             default=False,
         )
 
+        urgency_level = self._safe_choice(
+            value=data.get("urgency_level"),
+            allowed={"high", "medium", "low", "ambiguous", "unknown"},
+            default="unknown",
+        )
+
+        has_implicated_parties = self._safe_bool(
+            data.get("has_implicated_parties"),
+            default=False,
+        )
+
+        detected_features = self._safe_string_list(
+            data.get("detected_features")
+        )
+
         enriched_query_hint = data.get("enriched_query_hint")
         if not isinstance(enriched_query_hint, str) or not enriched_query_hint.strip():
             enriched_query_hint = self._build_basic_enriched_hint(
@@ -342,7 +379,7 @@ class QueryAnalyzer:
             retrieval_layer = "application"
             needs_legal_support = True
 
-        if safety_level in {"high", "critical"}:
+        if safety_level in {"high", "critical"} or urgency_level == "high":
             requires_human_review = True
 
         return {
@@ -355,6 +392,9 @@ class QueryAnalyzer:
             "detected_indicators": detected_indicators,
             "detected_keywords": detected_keywords,
             "safety_level": safety_level,
+            "urgency_level": urgency_level,
+            "has_implicated_parties": has_implicated_parties,
+            "detected_features": detected_features,
             "requires_human_review": requires_human_review,
             "enriched_query_hint": enriched_query_hint,
             "notes": notes,
@@ -484,6 +524,43 @@ class QueryAnalyzer:
         if risk_category in {"conducta_suicida", "autolesions", "violencia_sexual"}:
             safety_level = "critical"
 
+        # Heurística para urgency_level
+        if risk_category in {"conducta_suicida", "autolesions", "violencia_sexual"} or safety_level == "critical":
+            urgency_level = "high"
+        elif len(user_query.strip()) < 40 and risk_category in {"unknown", "general"}:
+            urgency_level = "ambiguous"
+        else:
+            urgency_level = "medium"
+
+        # Heurística para has_implicated_parties
+        has_implicated_parties = False
+        implicated_terms = ["pol", "marta", "joan", "marc", "laia", "nens", "nines", "nins", "alumnes", "professor", "tutor", "mestre", "companys", "company", "grup", "fills", "filla", "fill", "ell", "ella"]
+        if any(term in query_lower for term in implicated_terms):
+            has_implicated_parties = True
+        else:
+            # Detecta mayúsculas que no sean la primera palabra (indicio de nombre propio)
+            words = user_query.split()
+            for i, w in enumerate(words):
+                if i > 0 and w and w[0].isupper() and w.isalpha():
+                    has_implicated_parties = True
+                    break
+
+        # Heurística para detected_features
+        feature_map = {
+            "ciberassetjament": ["ciberassetjament", "xarxes socials"],
+            "consum_substancies": ["consum de substàncies"],
+            "conducta_suicida": ["conducta suïcida", "risc vital"],
+            "autolesions": ["autolesió"],
+            "tca": ["conducta alimentària"],
+            "violencia_sexual": ["abús sexual"],
+            "maltractament_infantil": ["maltractament"],
+            "assetjament_escolar": ["assetjament", "violència entre iguals"],
+            "conflicte_convivencia": ["conflicte de convivència"],
+        }
+        detected_features = feature_map.get(risk_category, [])
+        if not detected_features and risk_category not in {"unknown", "general"}:
+            detected_features = [risk_category.replace("_", " ")]
+
         enriched_query_hint = self._build_basic_enriched_hint(
             user_query=user_query,
             risk_category=risk_category,
@@ -513,6 +590,9 @@ class QueryAnalyzer:
             detected_keywords=detected_keywords,
             enriched_query_hint=enriched_query_hint,
             analyzer_used="fallback",
+            urgency_level=urgency_level,
+            has_implicated_parties=has_implicated_parties,
+            detected_features=detected_features,
             notes=f"Fallback per regles. Error LLM: {error}",
             is_out_of_scope=is_out_of_scope,
         )

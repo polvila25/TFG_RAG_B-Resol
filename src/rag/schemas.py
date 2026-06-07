@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional
 
 RiskCategory = str
@@ -21,6 +21,9 @@ class QueryAnalysis:
     detected_keywords: List[str]
     enriched_query_hint: str
     analyzer_used: str
+    urgency_level: str = "unknown"
+    has_implicated_parties: bool = False
+    detected_features: List[str] = field(default_factory=list)
     notes: Optional[str] = None
     is_out_of_scope: bool = False
 

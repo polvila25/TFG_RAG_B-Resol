@@ -171,6 +171,9 @@ class AdvancedRAGPipeline:
             "reporting_mode": bresol_analysis.reporting_mode,
             "victim_identified": "Sí" if bresol_analysis.victim_identified else "No",
             "identification_status": "Anònim" if bresol_analysis.reporting_mode == "anonymous" else ("Identificat" if bresol_analysis.reporting_mode == "identified" else "Desconegut"),
+            "urgency_level": query_analysis.urgency_level,
+            "has_implicated_parties": "Sí" if query_analysis.has_implicated_parties else "No",
+            "detected_features": ", ".join(query_analysis.detected_features) if query_analysis.detected_features else "Cap característica específica detectada.",
         }
         
         # Filtrem les variables perquè només s'enviïn les que el prompt específic requereix
