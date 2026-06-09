@@ -6,7 +6,7 @@ Aquesta documentació tècnica descriu exhaustivament el funcionament, l'arquite
 
 ## 1. Visió General del Sistema i Flux de Dades
 
-El sistema implementa una arquitectura **RAG Avançada con Triaje Clínico-Educativo Integrado**. No se limita a fer una cerca semàntica simple sobre documents, sinó que actua com un processador cognitiu que:
+El sistema implementa una arquitectura **RAG Avançada amb Triatge Previ**. No se limita a fer una cerca semàntica simple sobre documents, sinó que actua com un processador cognitiu que:
 1. **Analitza i interpreta l'alerta** inicial (sovint fragmentada i escrita en llenguatge informal o argot juvenil).
 2. **Determina la viabilitat i urgència** de la informació abans de procedir a la cerca (evitant falsos positius i respostes inconsistents amb protocols).
 3. **Aplica pre-filtres estrictes** basats en metadades inferides (capes de recuperació i categories de risc).
@@ -57,17 +57,58 @@ flowchart TD
 
 ## 2. Descripció Detallada de les Fases
 
-### Fase 1: Ingesta i Contextualització Crítica
-El pipeline rep un payload JSON enviat pel backend core de b-resol. Els dades d'entrada inclouen:
-*   **`text`**: El cos de l'alerta en text lliure.
+### Fase 1: Bresol Intake & Evaluation (Anàlisi del Cas i Gravetat)
+
+Aquesta fase, el seu objectiu és diagnosticar de manera automàtica i determinista l'estat inicial del cas presentat en la consulta del docent segons els criteris i la clasificació de b-resol. S'ha utilitzat el fitxer dissenyat per b-resol, inicialment estaba en pdf i s'ha convertit en un diccionari. El qual conté de cada categoria de risc de les 18 (ciberassetjament, tca, assetjament escolar, agressions sexuals, etc) la seguent informació:
+
+| Nom del Camp | Tipus de Dada | Descripció |
+| :--- | :--- | :--- |
+| **`label`** | `String` | El nom de la categoria de risc (ex. "Bullying o assetjament escolar"). |
+| **`definition`** | `String` | Una descripció de què constitueix aquell risc segons el document b-resol. |
+| **`minimum_elements`** | `List[String]` | Llista dels elements obligatoris que s'han de complir per aplicar el protocol (ex. repetició temporal). |
+| **`key_indicators`** | `List[String]` | Llista de paraules clau que ajuden a l'LLM a detectar el risc dins del text lliure del docent. |
+| **`missing_info_questions`** | `List[String]` | Preguntes empàtiques ja predefinides per si falten dades dels elements mínims a la consulta i s'ha de preguntar pel xat a l'alumne. |
+| **`safe_identification_questions`** | `List[String]` | Preguntes específiques per obtenir context de l'alumne sense forçar noms ni trencar l'anonimat. |
+| **`avoid_questions`** | `List[String]` | Llista de preguntes prohibides per a quan s'interactui amb l'alumne. |
+*   **Funcionament de l'Anàlisi de Risc i de Fase**:
+    *   **Diagnòstic inicial amb LLM i Injecció del Diccionari**: El procés comença amb un prompt estructurat que s'envia a un LLM. El sistema agafa el diccionari complet de categories de risc (detallat a la taula superior) i l'injecta directament dins d'aquest prompt, juntament amb la consulta escrita pel docent. Així, el LLM pot comparar exactament els fets relatats amb els criteris oficials de b-resol. Aquest prompt restringeix el model perquè no doni cap resposta narrativa, sinó que retorni exclusivament el següent esquema JSON:
+
+```json
+{
+  "bresol_case_type": "string (Categoria de risc detectada)",
+  "risk_category": "string (Igual que bresol_case_type)",
+  "detected_indicators": ["string (Llista d'indicadors presents)"],
+  "missing_information": ["string (Informació clau que falta)"],
+  "missing_minimum_elements": ["string (Elements obligatoris del protocol absents)"],
+  "reporter_role": "string (Rol de la persona informant)",
+  "victim_identified": "boolean (Si la víctima està identificada)",
+  "aggressor_identified": "boolean (Si l'agressor està identificat)",
+  "phase_assessment": "string (Nivell de gravetat legal inicial)",
+  "possible_crime_indicators": ["string (Llista de possibles delictes)"],
+  "requires_urgent_review": "boolean (Si hi ha risc vital o urgència crítica)",
+  "enriched_context_hint": "string (Pista de context per cerca RAG)",
+  "notes": "string (Anotacions addicionals)"
+}
+```
+**Avaluació determinista per codi**: El sistema processa el JSON generat pel model LLM i fa una avaluació mitjançant lògica. L'avaluador creua la informació del JSON amb el protocol per detectar exactament quines dades clau falten i preparar les preguntes per obtenir més informació.
+
+A més servirà més endavant per donar-li al Chatbot (en les fases posteriors) un "guió" exacte de què li ha de preguntar a l'usuari, és a dir podrem realitzar un prompt molt més acurat per obtenir millor resposta i assegurant que recull tota la informació obligatòria de manera guiada i segura abans de tancar el cas.
+
+### Fase 2: Consulta del docent, Contextualització i Anàlisi de la Consulta (fase pre-recuperació)
+
+Primer pas del pipeline, el sistema rep la consulta o alerta introduïda pel docent (sempre és el docent qui genera la consulta) a través de la plataforma b-resol
+Aquesta consulta es rep del frontend en un format JSON que conté les seguents dades:
+*   **`text`**: El missatge que ha introduït el docent.
 *   **`reporting_mode`**: `"identified"` (si es coneix l'alumne) o `"anonymous"` (alerta anònima).
 *   **`student_metadata`**: Diccionari amb edat, gènere i curs escolar (si el report és identificat).
 
-### Fase 2: Triatge Intel·ligent i Anàlisi Predictiu
-Un model LLM (Gemini) analitza semànticament la consulta per extreure un esquema JSON estrictamente estructurat sense respondre encara a l'usuari. Aquest anàlisi prediu:
+### Fase 3: Triatge Intel·ligent i Anàlisi de la Consulta (fase pre-recuperació)
+ L'objectiu d'aquesta fase és exclusivament "entendre i classificar" què està demanant el docent abans d'anar a buscar res a la base de dades. És una fase de pre-processament. Només s'utilitza la consulta del docent. 
+ 
+ S'ha utilitzat un model LLM (Gemini) per analitzar semànticament la consulta per extreure un esquema JSON estrictamente estructurat sense respondre encara a l'usuari. Aquest anàlisi prediu:
 *   **`query_type`**: Tipus de consulta (`application` per a acció/protocol, `legal_support` per a lleis, `mixed` per a ambdues, `unknown`).
-*   **`retrieval_layer`**: Capa documental preferent (`application`, `legal_support`, `unknown`).
-*   **`risk_category`**: Categoria principal de risc sota una taxonomia predefinida de 18 categories (ex. `assetjament_escolar`, `tca`, `consum_substancies`, `conducta_suicida`).
+*   **`retrieval_layer`**: Capa d'acció' (`application`, `legal_support`, `unknown`).
+*   **`risk_category`**: Categoria principal de risc sota una taxonomia predefinida de 18 categories es poden veure a la taula  (ex. `assetjament_escolar`, `tca`, `consum_substancies`, `conducta_suicida`).
 *   **`urgency_level`**: Nivell d'urgència (`high`, `medium`, `low`, `ambiguous`).
 *   **`has_implicated_parties`**: Flag que determina si es fan referències a persones implicades concretes.
 *   **`detected_features`**: Llista d'etiquetes específiques que descriuen l'agressió o incident (ex. "violència física", "exclusió").
@@ -123,26 +164,148 @@ A diferència dels splitters simples (que tallen fixament cada $N$ caràcters o 
 
 ---
 
-### C. Enriquiment i Normalització de Metadades [Estructura de Payload]
-Un fragment de text vectoritzat sense metadades és molt difícil de filtrar amb seguretat. Per aconseguir un RAG de grau de producció lliure d'alucinacions, processem els chunks a través de [llenar_chunks_correct.py](file:///c:/Users/polvi/OneDrive/Escriptori/TFG/TFG_RAG_B-Resol/src/ingestion/llenar_chunks_correct.py), que insereix un payload altament descriptiu.
+### B.1. Arquitectura Específica per a Circuits d'Actuació: Del Diagrama Visual al Graf de Decisió Semàntic
 
-A continuació es detallen els metadatos gestionats en la fase de chunking mitjançant taules estructurades:
+Els circuits d'actuació originals del Departament d'Educació són representacions visuals (diagrames de flux) amb múltiples camins, condicions i derivacions. Donat que la segmentació lineal tradicional (tallar el text cada $N$ caràcters) destruiria la lògica seqüencial d'aquests diagrames, s'ha implementat una arquitectura alternativa basada en **Grafs de Decisió Semàntics**.
 
-#### Taula 1: Esquema de Metadades del Payload del Chunk
+#### Concepte Arquitectònic
 
-| Camp de la Metadada | Tipus de Dades | Mètode de Càlcul / Inferencia | Descripció i Utilitat en el RAG |
+En lloc de tractar un circuit com un text pla, el sistema el descompon en **nodes discrets** (chunks). Cada node representa un pas específic del circuit, una decisió o una derivació externa. Aquests nodes estan enllaçats entre si perquè l'LLM i el sistema RAG puguin «navegar» pel protocol de la mateixa manera que un humà seguiria les fletxes d'un diagrama.
+
+#### Tipologia de Nodes (`chunk_type`)
+
+L'arquitectura defineix diversos tipus de chunks per caracteritzar la naturalesa de cada pas del circuit:
+
+| Tipus de Node | Descripció |
+| :--- | :--- |
+| **`document_identity`** | Node arrel que defineix el propòsit general i l'abast del circuit. |
+| **`trigger`** | L'acció o event que activa el circuit (ex. coneixement o sospita de violència). |
+| **`phase`** | Una etapa genèrica del circuit (ex. detecció, valoració, comunicació). |
+| **`decision_node`** | Punt de bifurcació crítica on el camí a seguir depèn de certes condicions (ex. «És una conducta contrària o una falta greu?»). |
+| **`action_step`** | Un pas purament operatiu (ex. aplicar mesures educatives). |
+| **`external_derivation`** | Punt on el cas surt de l'àmbit del centre educatiu i passa a agents externs (Mossos, DGAIA, Fiscalia). |
+| **`classification`** | Classificació de la infracció o conducta. |
+| **`communication`** | Comunicacions requerides a parts interessades o agents. |
+
+#### Estructura de Dades del Payload del Node
+
+Cada node del circuit s'emmagatzema en format JSON pur. L'estructura de metadades del `payload` està dissenyada per suportar cerques vectorials híbrides i reconstrucció de context de grafs:
+
+##### Enrutament i Connectivitat (El Graf)
+
+*   **`step_id`**: Identificador únic del pas actual (ex. `circuit_violencia_004_decisio_ambit`).
+*   **`previous_step_id`**: Identificador del pas immediatament anterior.
+*   **`next_step_ids`**: Array amb els IDs dels passos següents possibles. Permet a l'LLM saber exactament quines opcions hi ha a continuació i «caminar» pel graf.
+
+##### Contingut i Representació Semàntica
+
+*   **`text`**: La descripció textual literal de l'acció que s'ha de realitzar en aquest node.
+*   **`embedding_text`**: Un text super-enriquit dissenyat exclusivament per ser vectoritzat. Conté paraules clau addicionals, sinònims i context implícit que maximitzen la probabilitat de ser recuperat correctament per **Qdrant**.
+*   **`chunk_title`**: Títol clar del node per referenciar-lo en les respostes generades.
+
+##### Lògica de Decisió Dinàmica (`decision_logic`)
+
+Per als nodes de tipus `decision_node`, s'incrusta un sub-objecte algorítmic que explica a l'LLM les rutes lògiques condicionals:
+
+```json
+"decision_logic": {
+  "decision_question": "La situació és una conducta contrària o una falta greu?",
+  "conditions": [
+    {
+      "condition_id": "conducta_contraria_convivencia",
+      "next_action": "abordatge_NOFC_PdC_accio_tutorial",
+      "next_step_id": "circuit_violencia_008_conductes_contraries"
+    },
+    {
+      "condition_id": "falta_greument_perjudicial",
+      "next_action": "passar_a_direccio_i_equip_valoracio",
+      "next_step_id": "circuit_violencia_010_faltes_greument_perjudicials"
+    }
+  ]
+}
+```
+
+> [!IMPORTANT]
+> Aquest disseny permet que, en recuperar aquest chunk, el model generatiu sàpiga exactament **què preguntar a l'usuari** en mode exploratori (ex. a través de la suggerència d'interacció al xat) per poder derivar-lo al següent pas correcte del circuit.
+
+##### Agents, Sistemes i Responsables
+
+Els nodes registren quines entitats han d'intervenir en aquell moment precís mitjançant llistes predefinides:
+*   **`actors_involved`** / **`responsible`**: Qui ha d'executar l'acció (ex. *direcció*, *equip de valoració*, *alumnat_menor_18_anys*).
+*   **`support_agents`**: Assessorament extern però dins l'àmbit educatiu (ex. *EAP*, *USAV*).
+*   **`external_agents`**: Entitats fora d'educació obligades a actuar en derivacions (ex. *Fiscalia*, *Jutjat de guàrdia*).
+*   **`systems`**: Sistemes informàtics oficials a usar (ex. registre obligatori al *REVA*).
+
+##### Alineació Normativa i Legal
+
+*   **`legal_references`**: Mencions crues a les normatives vinculants.
+*   **`normalized_legal_references`**: Estructures normalitzades que mapegen la llei exacta per creuar-la de forma relacional amb la base de dades de legislació (`legal_support`).
+
+#### Integració dels Circuits en el Pipeline d'Ingesta
+
+Per evitar errors humans o desalineaments estructurals en els nodes base proporcionats als arxius JSON, l'script [llenar_chunks_correct.py](file:///c:/Users/polvi/OneDrive/Escriptori/TFG/TFG_RAG_B-Resol/src/ingestion/llenar_chunks_correct.py) actua com una capa de normalització, validació estricta i auto-completat d'inferència per als circuits:
+
+1.  **Capa de Recuperació**: L'script assegura que tot document de tipus `circuit_actuacio` rep obligatòriament els metadats `retrieval_layer = "application"` i `application_layer = true`.
+2.  **Inferència de Protocols Relacionats**: Si un node de circuit no defineix explícitament a quin protocol oficial respon, l'script creua el nom del fitxer amb un diccionari estàtic i li assigna la macro-referència (`protocol_violencia_ambit_educatiu`).
+3.  **Inferència Semàntica de Riscos (`risk_category`)**:
+    *   Si és un circuit determinista (ex. Drogues), se li assigna la seva categoria fixa (`consum_substancies`) mitjançant regles de fallback basades en el nom del fitxer.
+    *   Si és un circuit transversal (ex. Violència, que alberga múltiples violències dins), l'script avalua tot el text semàntic del node (`build_risk_context_text()`) i mitjançant una sèrie de **Regles de Contingut basades en Expressions Regulars Lleugeres** (Content Rules) etiqueta el node específic amb sub-riscos com *assetjament_escolar* o *maltractament_infantil*.
+
+#### Beneficis Operatius dels Grafs de Decisió en el Motor RAG
+
+La transformació de diagrames visuals en aquests **Grafs de Decisió Semàntics** en JSON atorga avantatges d'alt rendiment en producció:
+
+1.  **Prevenció d'Al·lucinacions Estructurals**: En estar codificats mitjançant un ID propi i punters directes `next_step_ids`, l'LLM es converteix en un simple «caminant del graf» que no inventa el següent pas d'un protocol, sinó que llegeix forçosament les rutes programades.
+2.  **Recuperació Vectorial Altament Precisada**: En indexar-se al vector store, el pipeline pot realitzar *Hard-Filtering* estricte (ex. filtrar només chunks on `risk_category == "falta_greument_perjudicial"`) abans d'usar algoritmes de similitud basats en Embeddings, reduint enormement la latència.
+3.  **Memòria Conversacional Contextual**: En un RAG multi-torn, si l'alumne respon «sí, és una falta greu», el generador extreu immediatament el `next_step_id` associat a aquella condició del `decision_logic` anterior, i enfoca el `Retrieval` sobre l'ID objectiu d'aquell node del circuit.
+
+---
+
+### C. Estratègia d'Enriquiment, Model de Llenguatge i Normalització de Metadades [Estructura de Payload]
+
+Un fragment de text vectoritzat sense metadades és molt difícil de filtrar amb seguretat. Per aconseguir un RAG de grau de producció lliure d'al·lucinacions, processem els chunks a través de [llenar_chunks_correct.py](file:///c:/Users/polvi/OneDrive/Escriptori/TFG/TFG_RAG_B-Resol/src/ingestion/llenar_chunks_correct.py), que insereix un payload altament descriptiu.
+
+#### Model de Llenguatge (LLM) per a l'Extracció de Metadades
+
+Per a la generació, extracció i enriquiment dels metadats estructurats s'ha dissenyat un pipeline automatitzat i híbrid que combina intel·ligència artificial i regles de negoci deterministes:
+
+*   **Model**: **`gpt-4o-mini`** d'OpenAI.
+*   **Configuració**: Temperatura `0.0` per garantir un comportament determinista, repetitiu i evitar al·lucinacions en la classificació o en els arrays relacionals.
+*   **Integració**: S'utilitza la funció `.with_structured_output(Schema)` de LangChain combinada amb models de **Pydantic** (`ProtocolChunkMetadata` i `LegalChunkMetadata`). Això obliga l'LLM a retornar un esquema JSON amb tipus de dades estrictament validats sota taxonomies predefinides (`RiskCategory`, `Phase`, `ChunkType`, `SeverityContext`).
+*   **Prompting d'Extracció**: L'LLM rep el contingut del fragment de text i el context de la seva ubicació en el document (capçaleres). A partir d'això, s'encarrega de resumir i optimitzar la cerca mitjançant la redacció de l'`embedding_text`, identificar els responsables de les mesures correctores (`actors_involved`, `responsible`), mapejar agents interns/externs de suport o derivació, i extreure les referències normatives.
+*   **Mecanismes de Fallback**: Si l'LLM falla, no pot ser contactat o produeix un error de validació de l'esquema de sortida, el pipeline utilitza funcions deterministes en Python que calculen automàticament paràmetres com la fase o la categoria de risc mitjançant el mapeig lexema/paraula clau i expressions regulars aplicades directament sobre el text del chunk.
+
+A continuació es detallen els metadats gestionats en la fase de chunking mitjançant taules estructurades:
+
+#### Taula 1: Esquema Complet de Metadades del Payload del Chunk
+
+| Camp de la Metadada | Tipus de Dades | Mètode de Càlcul / Inferència | Descripció i Utilitat en el RAG |
 | :--- | :--- | :--- | :--- |
+| **`step_id`** / **`id`** | `String` | Assignat estàticament (graf de circuits) o derivat de l'estructura. | Identificador únic del fragment a la base de dades vectorial. Permet la traçabilitat exacta de les accions. |
 | **`document_type`** | `String` | Assignat en la lectura segons l'arxiu d'origen. | Defineix el tipus de document (ex. `protocol`, `law`, `guidance`, `circuit_actuacio`). |
 | **`retrieval_layer`** | `String` | Inferred de `document_type` (regla estàtica). | Divideix la cerca en dues capes lògiques: `"application"` (com actuar) o `"legal_support"` (normativa legal). |
 | **`application_layer`** | `Boolean` | Inferred de `document_type`. | Flag booleà equivalent a `retrieval_layer == "application"`. Facilita filtres ràpids en base de dades. |
-| **`representation_type`**| `String` | Mapeig estàtic segons el `document_type`. | Indica l'estil formal del fragment (ex. `"redacted_protocol"`, `"visual_circuit"`, `"legal_text"`) per ajustar el format de sortida de l'LLM. |
-| **`related_protocols`** | `List[String]`| Inferred pel nom del fitxer en circuits. | Llista de protocols associats a un diagrama/circuit visual, permetent enllaçar conceptes relacionats. |
-| **`risk_category`** | `String` | Híbrid (Nom del fitxer + Anàlisi de paraules clau en text). | **[Metadada Crítica]** Categoria de la taxonomia de risc assignada al chunk per realitzar pre-filtrat estricte. |
+| **`representation_type`** | `String` | Mapeig estàtic segons el `document_type`. | Indica l'estil formal del fragment (ex. `"redacted_protocol"`, `"visual_circuit"`, `"legal_text"`) per ajustar el format de sortida de l'LLM. |
+| **`related_protocols`** | `List[String]` | Inferred pel nom del fitxer en circuits, o extret per LLM. | Llista de protocols associats a un diagrama/circuit visual, permetent enllaçar conceptes relacionats. |
+| **`risk_category`** | `String` | Híbrid (Nom del fitxer + Anàlisi de paraules clau en text / LLM). | **[Metadada Crítica]** Categoria de la taxonomia de risc assignada al chunk per realitzar pre-filtrat estricte. |
 | **`source_document`** | `String` | Extret del path de l'arxiu original. | Nom de l'arxiu de referència (ex. `protocol-transgenere.pdf`). |
-| **`source_page`** | `Integer` | Extret del metadat de pàgina de PyMuPDF. | Pàgina exacta on es troba el text original. Utilitzat per a les cites de font. |
-| **`chunk_title`** | `String` | Extret del processat d'encapçalaments. | Títol de la secció o pas concret a la qual pertany el text. |
-| **`language`** | `String` | Fixat per defecte en la ingesta (`"ca"`). | Idioma del text del chunk. Permet suport multiidioma. |
-| **`jurisdiction`** | `String` | Fixat per defecte (`"Catalunya"`). | Àmbit territorial normatiu del document. |
+| **`source_page`** | `Integer` \| `Null` | Extret del metadat de pàgina de PyMuPDF o assignat per l'analitzador. | Pàgina exacta on es troba el text original, utilitzat per a citacions de font sense al·lucinacions. |
+| **`chunk_title`** | `String` | Extret estructuradament per LLM (`gpt-4o-mini`). | Títol representatiu i resumit de la secció o pas concret al qual pertany el text. |
+| **`chunk_type`** | `String` | Extret estructuradament per LLM (`gpt-4o-mini`). | Tipus funcional del chunk en el protocol (ex. `decision_node`, `action_step`, `external_derivation`, `trigger`). |
+| **`phase`** | `String` | Inferred per capçaleres de secció / LLM (`gpt-4o-mini`). | Fase del procediment a la qual correspon el fragment (ex. `deteccio_identificacio`, `valoracio`, `comunicacio`, `normativa`). |
+| **`embedding_text`** | `String` | Enriquit i redactat per LLM (`gpt-4o-mini`). | Text súper optimitzat per a la cerca semàntica, enllaçant sigles, definicions, sinònims i referències de suport. |
+| **`actors_involved`** / **`responsible`** | `List[String]` | Extret estructuradament per LLM (`gpt-4o-mini`). | Rols o subjectes que tenen l'obligació de dur a terme l'acció (ex. `direccio_centre`, `docent`, `familia`). |
+| **`support_agents`** | `List[String]` | Extret estructuradament per LLM (`gpt-4o-mini`). | Equips interns de suport educatiu que poden assessorar en el cas (ex. `EAP`, `USAV`, `Inspeccio`). |
+| **`external_agents`** | `List[String]` | Extret estructuradament per LLM (`gpt-4o-mini`). | Agents judicials o de protecció social de derivació obligada (ex. `Mossos`, `Fiscalia`, `DGAIA`). |
+| **`systems`** | `List[String]` | Extret estructuradament per LLM (`gpt-4o-mini`). | Eines informàtiques o de registre on s'ha de bolcar la incidència (ex. registre al `REVA`). |
+| **`decision_logic`** | `Object` \| `Null` | Extret estructuradament per LLM (`gpt-4o-mini`). | JSON amb branques i condicions per derivar l'usuari cap a següents nodes lògics de la decisió. |
+| **`legal_references`** | `List[String]` | Extret estructuradament per LLM (`gpt-4o-mini`). | Mencions literals de lleis o articles presents al fragment de text. |
+| **`normalized_legal_references`** | `List[Object]` | Extret estructuradament per LLM (`gpt-4o-mini`) + normalitzador. | Objectes relacionals (ex. `law_abbreviation == 'LEC'`, `article == '37.1'`) per creuament documental. |
+| **`requires_external_activation`** | `Boolean` | Inferred segons la presència de derivacions externes. | Indica si el pas actual exigeix notificar immediatament entitats judicials o policials. |
+| **`requires_human_review`** | `Boolean` | Fixat per defecte (`true`). | Defineix si el chunk requereix revisió/aprovació humana en lloc d'automatització total. |
+| **`keywords`** | `List[String]` | Extret estructuradament per LLM (`gpt-4o-mini`). | Llista de conceptes clau per millorar la recuperació per paraules clau exactes. |
+| **`language`** | `String` | Fixat per defecte (`"ca"`). | Idioma del contingut textual. |
+| **`jurisdiction`** | `String` | Fixat per defecte (`"Catalunya"`). | Àmbit territorial legislatiu. |
 
 ---
 

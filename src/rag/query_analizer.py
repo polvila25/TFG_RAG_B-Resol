@@ -7,7 +7,22 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 
 from src.rag.schemas import QueryAnalysis
+'''
+De la consulta inicial del docent, s'utilitza un LLM sencill per poder 
+identificar del cert que tipus d'informació s'està demanant i amb quina
+finalitat.
 
+Aquesta part del pipeline es troba abans de la fase de recuperació 
+amb RAG i serveix per orientar el sistema RAG per tal d'oferir el
+document més adequat i correcte.
+
+Es pasa el prompt a un LLM per poder obtenir el JSON amb la informació necessària.
+S'utilitza el GEMINI 2.5 FLASH LITE com a LLM per a aquesta tasca.
+
+Si falla el LLM, s'utilitza un fallback simple per tal de poder obtenir el JSON amb la informació necessària.
+Per fer-ho es realitza un anàlisi bàsic de paraules clau per tal de poder obtenir el JSON amb la informació necessària.
+
+'''
 
 ALLOWED_QUERY_TYPES = {
     "application",
@@ -305,7 +320,10 @@ class QueryAnalyzer:
         user_query: str,
     ) -> Dict[str, Any]:
         """
-        Normalitza i valida els camps retornats pel LLM.
+        Normalitza i valida els camps retornats pel LLM que siguin correctes.
+        Si el LLM no retorna un camp o retorna un camp invàlid, es substitueix pel fallback
+        de seguretat.
+        Básicament es un validador. 
         """
 
         query_type = self._safe_choice(
@@ -497,7 +515,9 @@ class QueryAnalyzer:
         error: Optional[str] = None,
     ) -> QueryAnalysis:
         """
-        Fallback simple si falla el LLM.
+        Fallback simple si falla el LLM. Es realitza amb paraules clau clares si el LLM no respon o falla
+        durant la fase de triatge s'analitzen per paraules claus.
+        Normalment no es fa servir, només en cas d'error del LLM
 
         Es deliberadament bàsic. Serveix perquè el pipeline no es trenqui.
         """
