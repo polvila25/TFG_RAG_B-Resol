@@ -82,23 +82,79 @@ class AdvancedRAGPipeline:
         print(f"      [Time] Retrieve: {t_retrieve:.3f}s | Rerank: {t_rerank:.3f}s")
         return reranked_chunks
 
-    def run(self, user_query: str, reporting_mode: str = "identified", student_metadata: dict = None) -> Dict[str, Any]:
+    def _condense_query(self, user_query: str, chat_history: List[Dict[str, str]] = None) -> str:
+        if not chat_history:
+            return user_query
+
+        # Filtrar solo mensajes que no sean errores y tomar los últimos 6 para no saturar
+        history_text = ""
+        for msg in chat_history[-6:]:
+            role = "Usuari" if msg["role"] == "user" else "Assistent"
+            content = msg["content"]
+            # Limitar la longitud de los mensajes de la historia para mantener el contexto ligero
+            if len(content) > 300:
+                content = content[:300] + "..."
+            history_text += f"{role}: {content}\n"
+
+        condense_prompt = f"""
+Ets un assistent expert que reformula preguntes per a un sistema RAG de convivència escolar.
+Donada la següent conversa i una pregunta de seguiment de l'usuari, reformula-la per a que sigui una pregunta independent (standalone question) en català, que contingui tot el context necessari de la conversa anterior.
+No responguis a la pregunta, només reformula-la de manera concisa i directa. Si la pregunta de seguiment ja és independent o la conversa està buida, retorna-la tal qual.
+
+Conversa anterior:
+{history_text}
+
+Pregunta de seguiment: {user_query}
+
+Pregunta independent en català:"""
+
+        try:
+            from langchain_google_genai import ChatGoogleGenerativeAI
+            llm = ChatGoogleGenerativeAI(
+                google_api_key=self.gemini_api_key,
+                model=self.gemini_model,
+                temperature=0.0
+            )
+            res = llm.invoke(condense_prompt)
+            condensed = res.content.strip()
+            if condensed.startswith('"') and condensed.endswith('"'):
+                condensed = condensed[1:-1]
+            print(f"      [Condense] Query original: '{user_query}' -> Standalone: '{condensed}'")
+            return condensed
+        except Exception as e:
+            print(f"      [Condense] Error al condensar query: {e}. Usant original.")
+            return user_query
+
+    def run(
+        self, 
+        user_query: str, 
+        reporting_mode: str = "identified", 
+        student_metadata: dict = None,
+        chat_history: List[Dict[str, str]] = None
+    ) -> Dict[str, Any]:
         print("="*60)
         print("INICIANT PIPELINE RAG + TRIAJE")
         print("="*60)
         
         t_total_start = time.time()
         
+        # 0. Condensar consulta si hi ha historial de conversa
+        active_query = self._condense_query(user_query, chat_history)
+        
         # 1. Bresol Intake & Evaluation
         print("[1/6] Analitzant consulta amb Bresol Intake...")
-        bresol_analysis = self.intake_analyzer.analyze(user_query, reporting_mode)
+        bresol_analysis = self.intake_analyzer.analyze(active_query, reporting_mode)
         case_report = self.evaluator.evaluate(bresol_analysis)
         
         print(f"      - Risc: {bresol_analysis.risk_category} | Score Info: {case_report.minimum_information_score}/10")
         
         # 2. Query Intent Analysis
         print("[2/6] Analitzant intencionalitat (QueryAnalyzer)...")
-        query_analysis = self.query_analyzer.analyze(user_query)
+        query_analysis = self.query_analyzer.analyze(
+            active_query,
+            reporting_mode=reporting_mode,
+            student_metadata=student_metadata
+        )
         
         # 3. Response Planning (Routing)
         print("[3/6] Planificant ruta de resposta...")
@@ -120,26 +176,39 @@ class AdvancedRAGPipeline:
         
         if response_plan.should_run_documental_rag:
             print("\n[4/6] Recuperació RAG Activa...")
-            enriched = enrich_query(user_query, query_analysis, bresol_analysis)
+            enriched = enrich_query(active_query, query_analysis, bresol_analysis)
             
             # Simple routing based on query_type
             if query_analysis.query_type == "legal_support":
                 final_chunks = self._retrieve_and_rerank(
-                    enriched.search_query, user_query, "legal_support", query_analysis.risk_category, 10, 4)
+                    enriched.search_query, active_query, "legal_support", query_analysis.risk_category, 10, 4)
             elif query_analysis.query_type == "mixed":
                 app_chunks = self._retrieve_and_rerank(
-                    enriched.search_query, user_query, "application", query_analysis.risk_category, 12, 4)
+                    enriched.search_query, active_query, "application", query_analysis.risk_category, 12, 4)
                 leg_chunks = self._retrieve_and_rerank(
-                    enriched.search_query, user_query, "legal_support", query_analysis.risk_category, 8, 2)
+                    enriched.search_query, active_query, "legal_support", query_analysis.risk_category, 8, 2)
                 final_chunks = app_chunks + leg_chunks
             else:
                 final_chunks = self._retrieve_and_rerank(
-                    enriched.search_query, user_query, "application", query_analysis.risk_category, 15, 5)
+                    enriched.search_query, active_query, "application", query_analysis.risk_category, 15, 5)
             
             context = self.context_builder.build(final_chunks)
         else:
             print("\n[4/6] Recuperació RAG Omesa (Planificador).")
  
+        # Format chat history for generator context
+        history_context = ""
+        if chat_history:
+            history_context = "HISTORIAL DE LA CONVERSA ANTERIOR:\n"
+            for msg in chat_history[-6:]:
+                role = "Usuari" if msg["role"] == "user" else "Assistent"
+                content = msg["content"]
+                # Si es respuesta del asistente, removemos la metadata técnica para no saturar al LLM
+                if "Veure anàlisi i fonts" in content:
+                    content = content.split("Veure anàlisi i fonts")[0]
+                history_context += f"- {role}: {content}\n"
+            history_context += "\nConsulta actual de l'usuari a respondre:\n"
+
         # 6. LLM Generation
         print("[5/6] Generant resposta amb Prompt Dinàmic...")
         dynamic_prompt = get_prompt(
@@ -155,7 +224,7 @@ class AdvancedRAGPipeline:
         generator = LLMGenerator(self.gemini_api_key, self.gemini_model, dynamic_prompt)
         
         variables = {
-            "user_query": user_query,
+            "user_query": f"{history_context}{user_query}",
             "answer_context": context,
             "query_type": query_analysis.query_type,
             "risk_category": bresol_analysis.risk_category,

@@ -246,7 +246,8 @@ if prompt := st.chat_input("Fes la teva consulta sobre els protocols..."):
                 result = rag.run(
                     user_query=prompt, 
                     reporting_mode=reporting_mode_selected, 
-                    student_metadata=student_metadata_payload
+                    student_metadata=student_metadata_payload,
+                    chat_history=st.session_state.messages[:-1]
                 )
                 response_text = result["answer"]
                 

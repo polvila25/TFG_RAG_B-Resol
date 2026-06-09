@@ -141,13 +141,13 @@ Nivells de seguretat (safety_level):
 - unknown: no es pot valorar.
 
 Nivells d'urgència (urgency_level):
-- high: Presència d'amenaces explícites de mal inminent, violència física continuada, intencions d'autolesió o conductes crítiques immediates.
-- ambiguous: La consulta és molt curta, incompleta o indica sospita/malestar sense donar detalls clars del què, qui, quan o on (ej. "Pol té problemes a la sortida", "Un alumne ho passa malament").
-- medium: Incident identificat d'intensitat moderada que requereix atenció, però sense risc vital o físic immediat.
+- high: Presència d'amenaces explícites de mal inminent, violència física continuada, intencions d'autolesió o conductes crítiques immediates, o fets d'intensitat/impacte molt greu sobre l'alumne.
+- ambiguous: La consulta és extremadament curta, incomprensible o li falta sentit en l'incident (ex. "ha passat una cosa a la sortida", "un tema estrany"). Si el tipus de comunicació és IDENTIFICADA, assumeix que la identitat de l'alumne implicat ja és coneguda pel centre, per tant NO la classifiquis com a 'ambiguous' només per la manca de noms propis, descriptors o dades perifèriques en el text. Avalua la urgència estrictament per la gravetat/impacte dels fets.
+- medium: Incident identificat d'intensitat moderada que requereix atenció (inclou exclusió, insults, aïllament, rumors o conflictes de convivència), però sense risc vital o físic immediat.
 - low: Consulta general de caràcter informatiu, normatiu o preventiu sense urgència real.
 
 Presència de parts implicades (has_implicated_parties):
-- true: Si es fa referència a persones concretes implicades, ja sigui per nom propi (ej. "Pol", "Joan"), pronoms personals o descripcions de grups/persones (ej. "uns nens del seu curs", "el tutor", "una companya de classe").
+- true: Si es fa referència a persones concretes implicades, ja sigui per nom propi (ej. "Pol", "Joan"), pronoms personal o descripcions de grups/persones (ej. "uns nens del seu curs", "el tutor", "una companya de classe"). També ha de ser true si el tipus de comunicació és IDENTIFICADA.
 - false: Si la consulta és purament abstracta o general, sense anomenar ni referenciar cap persona o grup de persones físiques en la situació actual.
 
 Característiques detectades (detected_features):
@@ -173,6 +173,10 @@ Retorna exactament aquest JSON:
   "enriched_query_hint": "frase breu en català per ajudar a recuperar documents",
   "notes": "comentari breu o null"
 }}
+
+Dades contextuals de la comunicació:
+- Tipus de comunicació: {reporting_mode}
+{student_metadata_text}
 
 Consulta del docent:
 {user_query}
@@ -205,16 +209,37 @@ class QueryAnalyzer:
         self.prompt = PromptTemplate.from_template(QUERY_ANALYZER_PROMPT)
         self.chain = self.prompt | self.llm | StrOutputParser()
 
-    def analyze(self, user_query: str) -> QueryAnalysis:
+    def analyze(
+        self,
+        user_query: str,
+        reporting_mode: str = "identified",
+        student_metadata: Optional[Dict[str, Any]] = None,
+    ) -> QueryAnalysis:
         """
         Analitza una consulta del docent i retorna QueryAnalysis.
 
         Si el LLM falla o retorna JSON invàlid, aplica fallback bàsic per regles.
         """
 
+        student_metadata_lines = []
+        if student_metadata:
+            curs = student_metadata.get("curs")
+            if curs and curs != "No especificat":
+                student_metadata_lines.append(f"- Curs de l'alumne implicat: {curs}")
+            sexe = student_metadata.get("sexe")
+            if sexe and sexe != "No especificat":
+                student_metadata_lines.append(f"- Sexe de l'alumne implicat: {sexe}")
+            rol = student_metadata.get("rol")
+            if rol and rol != "No especificat":
+                student_metadata_lines.append(f"- Rol a l'incident de l'alumne implicat: {rol}")
+
+        student_metadata_text = "\n".join(student_metadata_lines) if student_metadata_lines else "- Sense metadades de l'alumne."
+
         try:
             raw_response = self.chain.invoke({
                 "user_query": user_query,
+                "reporting_mode": "Identificada (identitat coneguda)" if reporting_mode == "identified" else "Anònima (identitat oculta)",
+                "student_metadata_text": student_metadata_text,
             })
 
             parsed = self._parse_json_response(raw_response)
@@ -245,7 +270,7 @@ class QueryAnalyzer:
             )
 
         except Exception as exc:
-            return self._fallback_rules(user_query, error=str(exc))
+            return self._fallback_rules(user_query, reporting_mode, student_metadata, error=str(exc))
 
     def _parse_json_response(self, raw_response: str) -> Dict[str, Any]:
         """
@@ -467,6 +492,8 @@ class QueryAnalyzer:
     def _fallback_rules(
         self,
         user_query: str,
+        reporting_mode: str = "identified",
+        student_metadata: Optional[Dict[str, Any]] = None,
         error: Optional[str] = None,
     ) -> QueryAnalysis:
         """
@@ -527,23 +554,26 @@ class QueryAnalyzer:
         # Heurística para urgency_level
         if risk_category in {"conducta_suicida", "autolesions", "violencia_sexual"} or safety_level == "critical":
             urgency_level = "high"
-        elif len(user_query.strip()) < 40 and risk_category in {"unknown", "general"}:
+        elif len(user_query.strip()) < 40 and risk_category in {"unknown", "general"} and reporting_mode == "anonymous":
             urgency_level = "ambiguous"
         else:
             urgency_level = "medium"
 
         # Heurística para has_implicated_parties
         has_implicated_parties = False
-        implicated_terms = ["pol", "marta", "joan", "marc", "laia", "nens", "nines", "nins", "alumnes", "professor", "tutor", "mestre", "companys", "company", "grup", "fills", "filla", "fill", "ell", "ella"]
-        if any(term in query_lower for term in implicated_terms):
+        if reporting_mode == "identified":
             has_implicated_parties = True
         else:
-            # Detecta mayúsculas que no sean la primera palabra (indicio de nombre propio)
-            words = user_query.split()
-            for i, w in enumerate(words):
-                if i > 0 and w and w[0].isupper() and w.isalpha():
-                    has_implicated_parties = True
-                    break
+            implicated_terms = ["pol", "marta", "joan", "marc", "laia", "nens", "nines", "nins", "alumnes", "professor", "tutor", "mestre", "companys", "company", "grup", "fills", "filla", "fill", "ell", "ella"]
+            if any(term in query_lower for term in implicated_terms):
+                has_implicated_parties = True
+            else:
+                # Detecta mayúsculas que no sean la primera palabra (indicio de nombre propio)
+                words = user_query.split()
+                for i, w in enumerate(words):
+                    if i > 0 and w and w[0].isupper() and w.isalpha():
+                        has_implicated_parties = True
+                        break
 
         # Heurística para detected_features
         feature_map = {
@@ -602,6 +632,8 @@ def analyze_query(
     user_query: str,
     gemini_api_key: str,
     gemini_model: str = "gemini-2.5-flash-lite",
+    reporting_mode: str = "identified",
+    student_metadata: Optional[Dict[str, Any]] = None,
 ) -> QueryAnalysis:
     """
     Funció helper per usar l'analitzador de manera simple.
@@ -612,4 +644,4 @@ def analyze_query(
         gemini_model=gemini_model,
     )
 
-    return analyzer.analyze(user_query)
+    return analyzer.analyze(user_query, reporting_mode, student_metadata)
