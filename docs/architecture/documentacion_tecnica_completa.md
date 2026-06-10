@@ -55,11 +55,38 @@ flowchart TD
 
 ---
 
+#### Taula 1: Categories de Risc del Sistema(`risk_category`)
+
+Aquesta taula recull les categories formalment admeses pel payload del chunk i utilitzades pel pre-filtrat de Qdrant. Són les categories que podran ser les alertes:
+
+| Identificador (`risk_category`) | Descripció del Risc Associat | Mètode d'Inferència al Chunk |
+| :--- | :--- | :--- |
+| **`assetjament_escolar`** | Situacions d'assetjament (bullying) entre iguals al centre. | Anàlisi de paraules clau o per fitxer origen. |
+| **`ciberassetjament`** | Assetjament realitzat a través de mitjans digitals/xarxes. | Anàlisi de paraules clau o per fitxer origen. |
+| **`conductes_odi_discriminacio`** | Delictes d'odi, racisme, homofòbia, lgtbifòbia, xenofòbia. | Anàlisi de paraules clau o per fitxer origen. |
+| **`violencies_masclistes`** | Violència exercida contra les dones per raó de gènere. | Anàlisi de paraules clau o per fitxer origen. |
+| **`violencia_sexual`** | Abús sexual, agressió sexual, tocaments, exhibicionisme. | Anàlisi de paraules clau o per fitxer origen. |
+| **`maltractament_infantil`** | Negligència domèstica, maltractament físic/emocional a la llar. | Anàlisi de paraules clau o per fitxer origen. |
+| **`violencia_familiar`** | Violència en l'àmbit domèstic no masclista o creuada. | Anàlisi de paraules clau o per fitxer origen. |
+| **`falta_greument_perjudicial`** | Infraccions molt greus de les normes de convivència del centre. | Anàlisi de paraules clau o per fitxer origen. |
+| **`menor_14_infraccio_penal`** | Actes delictius comesos por menors de 14 anys (inimpuntables).| Anàlisi de paraules clau o per fitxer origen. |
+| **`presumpte_delicte`** | Delictes generals que requereixen derivació a Mossos/Fiscalia. | Anàlisi de paraules clau o per fitxer origen. |
+| **`extremisme_violent`** | Processos de radicalització, terrorisme o violència extrema. | Anàlisi de paraules clau o per fitxer origen. |
+| **`conducta_suicida`** | Ideació suïcida activa o verbalitzada, plans de suïcidi. | Anàlisi de paraules clau o per fitxer origen. |
+| **`autolesions`** | Talls, autolesions físiques o intents de fer-se mal. | Anàlisi de paraules clau o per fitxer origen. |
+| **`tca`** | Trastorns de la Conducta Alimentària (anorèxia, bulímia). | Anàlisi de paraules clau o per fitxer origen. |
+| **`consum_substancies`** | Consum de drogues, alcohol, tabac, vapeig a secundària. | Anàlisi de paraules clau o per fitxer origen. |
+| **`conflicte_convivencia`** | Conflictes menors o problemes de convivència sense abús de poder.| Anàlisi de paraules clau o per fitxer origen. |
+| **`acompanyament_alumnat_transgenere`** | Protocols de transició, canvi de nom o suport a alumnes trans. | Anàlisi de paraules clau o per fitxer origen. |
+| **`general`** | Temes transversals de violència o protocols de convivència. | Fallback quan no es detecta cap risc específic. |
+
+---
+
 ## 2. Descripció Detallada de les Fases
 
 ### Fase 1: Bresol Intake & Evaluation (Anàlisi del Cas i Gravetat)
 
-Aquesta fase, el seu objectiu és diagnosticar de manera automàtica i determinista l'estat inicial del cas presentat en la consulta del docent segons els criteris i la clasificació de b-resol. S'ha utilitzat el fitxer dissenyat per b-resol, inicialment estaba en pdf i s'ha convertit en un diccionari. El qual conté de cada categoria de risc de les 18 (ciberassetjament, tca, assetjament escolar, agressions sexuals, etc) la seguent informació:
+Aquesta fase, el seu objectiu és diagnosticar de manera automàtica i determinista l'estat inicial del cas presentat en la consulta del docent segons els criteris i la clasificació de b-resol. S'ha utilitzat el fitxer dissenyat per b-resol, inicialment estaba en pdf i s'ha convertit en un diccionari. El qual conté de cada categoria de risc de la Taula 1 la seguent informació:
 
 | Nom del Camp | Tipus de Dada | Descripció |
 | :--- | :--- | :--- |
@@ -102,8 +129,8 @@ Aquesta consulta es rep del frontend en un format JSON que conté les seguents d
 *   **`reporting_mode`**: `"identified"` (si es coneix l'alumne) o `"anonymous"` (alerta anònima).
 *   **`student_metadata`**: Diccionari amb edat, gènere i curs escolar (si el report és identificat).
 
-### Fase 3: Triatge Intel·ligent i Anàlisi de la Consulta (fase pre-recuperació)
- L'objectiu d'aquesta fase és exclusivament "entendre i classificar" què està demanant el docent abans d'anar a buscar res a la base de dades. És una fase de pre-processament. Només s'utilitza la consulta del docent. 
+### Fase 3: Anàlisi de la Consulta incial del docent (fase pre-recuperació)
+ L'objectiu d'aquesta fase és exclusivament "entendre i classificar" què està demanant el docent abans d'anar a buscar res a la base de dades. És una fase de pre-processament on només s'utilitza la consulta del docent. 
  
  S'ha utilitzat un model LLM (Gemini) per analitzar semànticament la consulta per extreure un esquema JSON estrictamente estructurat sense respondre encara a l'usuari. Aquest anàlisi prediu:
 *   **`query_type`**: Tipus de consulta (`application` per a acció/protocol, `legal_support` per a lleis, `mixed` per a ambdues, `unknown`).
@@ -114,9 +141,24 @@ Aquesta consulta es rep del frontend en un format JSON que conté les seguents d
 *   **`detected_features`**: Llista d'etiquetes específiques que descriuen l'agressió o incident (ex. "violència física", "exclusió").
 
 ### Fase 3: Planificació de la Resposta i Enrutament (`ResponsePlanner`)
-El planificador avalua el resultat de la Fase 2 i calcula la **puntuació de completesa** de l'alerta (`minimum_information_score`). 
-*   **Si `score <= 3` o `urgency_level == "ambiguous"`**: Es determina que l'alerta és massa ambígua per activar mesures punitives o protocols específics de forma segura. L'enrutador **no bloqueja el RAG**, sinó que redirigeix la generació cap a un pla preventiu prioritzant la **Indagació a través del Xat de b-resol** per obtenir les dades que falten, recolzant-se en la guia pedagògica de comunicació empàtica.
-*   **Si la informació es suficient**: S'activa la recuperació documental RAG completa per obtenir protocols de resolució detallats.
+
+He dissenyat una estategia d'enrutament que rep l'avaluació de les dades del cas (Fase 1) i l'anàlisi de la intencionalitat de la consulta (Fase 2) per prendre la decisió estratègica de com ha de respondre el sistema. La seva funció és establir la ruta de la resposta, decidir si s'ha d'executar o no la cerca documental (RAG) i preparar instruccions directives clares per al model.
+
+Aquesta planificació s'aplica mitjançant un arbre de decisions per codi amb 4 prioritats clares:
+
+1.  **Fora de Domini (Prioritat 1)**: Si la consulta no té cap relació amb l'entorn escolar, el sistema desactiva el RAG i rebutja la interacció per protegir els recursos.
+2.  **Risc Vital Urgent (Prioritat 2)**: Si es detecta perill vital imminent (ex: autolesions, violència greu), el sistema prioritza exclusivament cercar mesures de protecció i seguretat física immediata, ignorant procediments secundaris.
+3.  **Alerta Anònima (Prioritat 3)**: Si l'usuari ha usat el canal anònim, s'avalua la quantitat de dades aportades:
+    *   **Informació incompleta**: S'activa un pla d'indagació segura dissenyat per investigar la situació evitant fer preguntes directes que puguin posar en perill l'anonimat de l'emissor.
+    *   **Informació suficient**: S'activa la cerca del protocol corresponent afegint instruccions molt estrictes per garantir i protegir la identitat de qui reporta.
+4.  **Cas Estàndard i Identificat (Prioritat 4)**: Per a les consultes generals, l'enrutador revisa si falten elements obligatoris i el tipus de petició:
+    *   **Consulta Legal**: El RAG es focalitza exclusivament a cercar marc normatiu i legislació.
+    *   **Consulta de Protocol / Pràctica**: Segons la completesa de l'alerta:
+        *   **Massa ambigua o insuficient**: L'enrutador evita donar un procediment definitiu per seguretat. En comptes d'això, llança una resposta d'orientació preventiva recolzant-se en el xat empàtic per demanar les dades que falten.
+        *   **Ambigüitat Parcial**: Es retorna la part aplicativa del protocol inicial i es combina amb la petició de les dades pendents.
+        *   **Informació completa**: El cas està perfectament tipificat i madur. S'activa la ruta per retornar el procediment d'actuació de manera completa, directa i executiva.
+
+Com a resultat, el planificador retorna un a resposta que conte el camps: `response_type` (ruta final de la resposta), `should_run_documental_rag` (si s'executa la cerca RAG a Qdrant o no si es fora de context), `urgent_actions` (accions de seguretat immediates (només alertes urgents)) i `rag_instructions` (instruccions semàntiques directes al generador final (són com meta-instruccions)).
 
 ---
 
@@ -132,18 +174,26 @@ Aquesta fase és el nucli de la preparació de les dades en fred (ingestió offl
 ```
 
 ### A. Càrrega de Documents (`PdfLoader`)
-El procés comença a la classe `PdfLoader` (ubicada a [document_pipeline.py](file:///c:/Users/polvi/OneDrive/Escriptori/TFG/TFG_RAG_B-Resol/src/ingestion/document_pipeline.py)).
+El procés comença a la classe `PdfLoader`.
 *   **Mètode utilitzat**: `PyMuPDFLoader` de LangChain.
-*   **Funcionament**: Llegeix el fitxer PDF físic pàgina per pàgina. Genera un objecte `Document` per a cada pàgina, conservant la propietat `page_content` i un diccionari de metadatos amb la ruta original (`source`) i el número de pàgina (`page`).
-*   **Justificació tècnica**: `PyMuPDF` es un dels parsers de PDF més ràpids en Python. El més important per a un entorn legal-educatiu és que **manté la delimitació estricta de les pàgines reals del PDF original**. Això ens permet registrar el número exacto de pàgina en les metadades de cada chunk, garantint cites normatives precises i verificables per part dels docents en el dashboard.
+*   **Funcionament**: Llegeix el fitxer PDF físic pàgina per pàgina. Genera un objecte `Document` per a cada pàgina, conservant la propietat `page_content` i un diccionari de metadatos amb la ruta original (`source`) i el número de pàgina (`page`). És a dir cada pagina del pdf es converteix en un objecte Document.
+*   **Justificació**: `PyMuPDF` es un dels parsers de PDF més ràpids en Python. El més important per a un entorn legal-educatiu és que **manté la delimitació estricta de les pàgines reals del PDF original**. Això ens permet registrar el número exacto de pàgina en les metadades de cada chunk, garantint cites normatives precises i verificables per part dels docents en el dashboard.
 
 ---
 
 ### B. Segmentació Semàntica de Text (`Chunker`) [Detall i Justificació]
-La segmentació es gestiona mitjançant la classe `Chunker` a `document_pipeline.py`. Aquest component és crucial: si el text es talla malament, es pot perdre el context d'una mesura correctora o fragmentar una definició legal, fent que el RAG recuperi informació incompleta.
+La segmentació es gestiona mitjançant una classe creada anomenada `Chunker` a `document_pipeline.py`. Aquest component és crucial: si el text es talla malament, es pot perdre el context d'un protocol o fragmentar una definició legal, fent que el RAG recuperi informació incompleta. S'ha optat per utilitzar diferents estrategies segons el tipus de document, he decidit dividir-ho en protocols i lleis utilitzant una estrategia i després circuits d'actuació, degut a una estructura completament diferent, s'ha utilitzat un altre mètode. 
 
-#### 1. Mètode de Divisió: `RecursiveCharacterTextSplitter`
-A diferència dels splitters simples (que tallen fixament cada $N$ caràcters o paraules sense respectar l'estructura), el `RecursiveCharacterTextSplitter` funciona de manera intel·ligent a través de separadors jeràrquics.
+#### 1. Mètode de Divisió per Protocols i lleis:
+
+S'ha utilitzat la clase de divisió de text `RecursiveCharacterTextSplitter` de la llibreria `langchain_text_splitters`. Aquest component treballa de forma totalment local. 
+
+**Com funciona?**
+A diferència d'una estratègia de fragmentació simple (que talla fixament cada $N$ caràcters o paraules sense respectar l'estructura), aquest mètode treballa de manera intel·ligent. En passar-li un text, es basa en els següents paràmetres clau:
+*   **Separadors**: El splitter busca els caràcters indicats (salts de línia, espais, puntuació) per decidir on tallar, utilitzant-los de forma jeràrquica.
+*   **Chunk Size (Mida màxima)**: Cada fragment resultant no excedirà mai la longitud màxima establerta.
+*   **Chunk Overlap (Solapament)**: Es defineix una quantitat de caràcters que es repetiran entre el final d'un fragment i l'inici del següent, permetent que comparteixin context.
+*   **Resultat**: Finalment, retorna una llista de fragments llestos per ser usats en la següent etapa del flux (generació d'embeddings).
 *   **Funcionament de l'Algoritme Pas a Pas**:
     1. Rep el text d'una pàgina individual del PDF.
     2. Avalua la llista de separadors de forma ordenada: `["\n\n", "\n", " ", ".", ",", "\u200b", "\uff0c", "\u3001", "\uff0e", "\u3002", ""]`.
@@ -152,15 +202,18 @@ A diferència dels splitters simples (que tallen fixament cada $N$ caràcters o 
     5. Aquest procés es repeteix descendint pels separadors (espais en blanc, punts, comes) fins que tots els fragments compleixen la condició de mida.
     6. **El separador final `""` (buit)** serveix com a fallback de seguretat extrema: si un paràgraf sencer no té cap tipus de puntuació ni espai i supera el límit, es talla a nivell de caràcters per evitar un error de desbordament.
 
-#### 2. Justificació dels Paràmetres de Configuració
+#### 2. Justificació dels Paràmetres de Configuració Utilitzats
+
+Explicaré els caràcters de la clase `RecursiveCharacterTextSplitter` per justificar el seu ús en el meu projecte. 
+
 *   **Mida del Chunk (`chunk_size = 1000` caràcters)**:
-    *   *Justificació:* Equival aproximadament a unes 150-220 paraules. Aquest format s'anomena **"granularitat mitjana"**. Un chunk massiu (ex. 3000 caràcters) dilueix la potència dels embeddings semàntics, ja que barregen massa idees en un sol vector. Un chunk massa petit (ex. 200 caràcters) no conté prou context lògic per a què l'LLM redacti una acció coherent. Els 1000 caràcters són el *sweet spot* que permet encabir un article legal complet, un pas d'un circuit de derivació o una recomanació pedagògica sencera.
+    *   Equival aproximadament a unes 150-220 paraules. Un chunk massiu (ex. 3000 caràcters) redueix la potència dels embeddings semàntics, ja que barregen massa idees en un sol vector. Un chunk massa petit (ex. 200 caràcters) no conté prou context lògic per a què l'LLM redacti una acció coherent. Els 1000 caràcters són el *punt òptim* que permet encabir un article legal complet, un pas d'un circuit de derivació o una recomanació pedagògica sencera.
 *   **Solapament (`chunk_overlap = 150` caràcters)**:
-    *   *Justificació:* El solapament de 150 caràcters (un 15% de la mida del chunk) actua com una finestra lliscant que copia el final d'un chunk a l'inici del següent. Això és vital per a **evitar la pèrdua de continuïtat semàntica**. Si una frase clau com *"En cas d'assetjament greu, s'ha d'avisar immediatament a Inspecció"* queda tallada per la meitat exactament en el caràcter 1000, cap dels dos fragments tindria sentit complet. Amb el solapament, la frase apareix sencera com a mínim en un dels dos chunks colindants.
-*   **Separadors Prioritaris**:
-    *   *Justificació:* Estan dissenyats específicament per a documents oficials i normatius. Els paràgrafs (`\n\n`) i els salts de línia (`\n`) són prioritaris perquè els protocols solen estructurar-se en llistes numerades o passos consecutius. Tallar respectant els salts de línia evita barrejar punts de llistes diferents, garantint que cada pas d'actuació es llegeixi com una unitat lògica autònoma.
+    *   Per asegurar la continuïtat semàntica, he triat un solapament de 150 caràcters (un 15% de la mida del chunk) actua com una finestra lliscant que copia el final d'un chunk a l'inici del següent. Això és vital per a **evitar la pèrdua de continuïtat semàntica**. Si una frase clau com *"En cas d'assetjament greu, s'ha d'avisar immediatament a Inspecció"* queda tallada per la meitat exactament en el caràcter 1000, cap dels dos fragments tindria sentit complet. Amb el solapament, la frase apareix sencera com a mínim en un dels dos chunks colindants.
+*   **Llista de Separadors**: `["\n\n", "\n", " ", ".", ",", "\u200b", "\uff0c", "\u3001", "\uff0e", "\u3002", ""]`
+    *   Aquest separadors estan triats per respectar de manera intel·ligent l'estructura dels documents normatius. El divisor de paràgraf (`\n\n`) i el salt de línia (`\n`) tenen la màxima prioritat perquè els protocols solen estar formats per llistes numerades. Així, el sistema intentarà primer dividir el text per paràgrafs; només si un paràgraf sencer excedeix els 1000 caràcters del `chunk_size`, l'algoritme baixarà de nivell i provarà de tallar-lo pel següent separador disponible (salts de línia simples, després espais `" "`, punts `"."`, comes `","`, etc.). D'aquesta manera s'evita trencar frases per la meitat o barrejar punts de llistes diferents, garantint que cada pas d'actuació es mantingui com una unitat lògica. El separador final buit (`""`) actua com a mesura de seguretat extrema, forçant un tall per caràcter si un bloc massiu de text no conté puntuació.
 *   **Segmentació a nivell de Pàgina (Page-Boundary Awareness)**:
-    *   *Justificació:* El pipeline realitza la divisió de text **pàgina per pàgina** en lloc de concatenar tot el PDF en un sol text massiu. Això s'ha dissenyat així per dues raons: primer, per mantenir una correlació estricta i lliure d'errors amb el número de pàgina font (`source_page`); segon, perquè el canvi de pàgina en un protocol sovint marca una transició de secció, i respectar aquesta frontera de forma inherent ajuda a mantenir la cohesió semàntica del fragment.
+    *   Com s'ha explicat al principi, el pipeline realitza la divisió de text **pàgina per pàgina** en lloc de concatenar tot el PDF en un sol text. Això s'ha dissenyat així per dues raons: primer, per mantenir una correlació estricta i lliure d'errors amb el número de pàgina font (`source_page`) i així saber exactament cada fragment a quina pàgina pertany, clau per després poder referenciar i citar la resposta. Segon, perquè el canvi de pàgina en un protocol sovint marca una transició de secció, i respectar aques límit ajuda a mantenir la cohesió semàntica del fragment.
 
 ---
 
@@ -170,7 +223,7 @@ Els circuits d'actuació originals del Departament d'Educació són representaci
 
 #### Concepte Arquitectònic
 
-En lloc de tractar un circuit com un text pla, el sistema el descompon en **nodes discrets** (chunks). Cada node representa un pas específic del circuit, una decisió o una derivació externa. Aquests nodes estan enllaçats entre si perquè l'LLM i el sistema RAG puguin «navegar» pel protocol de la mateixa manera que un humà seguiria les fletxes d'un diagrama.
+En lloc de tractar un circuit com un text pla, com es fa emb els protocols o lleis, el sistema el descompon en **nodes discrets** (chunks). Cada node representa un pas específic del circuit, una decisió o una derivació externa. Aquests nodes estan enllaçats entre si perquè l'LLM i el sistema RAG puguin «navegar» pel protocol de la mateixa manera que un humà seguiria les fletxes d'un diagrama. Realment el que es segueix a les metadates es crear una estructura de graf. 
 
 #### Tipologia de Nodes (`chunk_type`)
 
@@ -309,32 +362,7 @@ A continuació es detallen els metadats gestionats en la fase de chunking mitjan
 
 ---
 
-#### Taula 2: Taxonomia de la Categoria de Risc (`risk_category`)
 
-Aquesta taula recull les categories formalment admeses pel payload del chunk i utilitzades pel pre-filtrat de Qdrant:
-
-| Identificador (`risk_category`) | Descripció del Risc Associat | Mètode d'Inferència al Chunk |
-| :--- | :--- | :--- |
-| **`assetjament_escolar`** | Situacions d'assetjament (bullying) entre iguals al centre. | Anàlisi de paraules clau o per fitxer origen. |
-| **`ciberassetjament`** | Assetjament realitzat a través de mitjans digitals/xarxes. | Anàlisi de paraules clau o per fitxer origen. |
-| **`conductes_odi_discriminacio`** | Delictes d'odi, racisme, homofòbia, lgtbifòbia, xenofòbia. | Anàlisi de paraules clau o per fitxer origen. |
-| **`violencies_masclistes`** | Violència exercida contra les dones per raó de gènere. | Anàlisi de paraules clau o per fitxer origen. |
-| **`violencia_sexual`** | Abús sexual, agressió sexual, tocaments, exhibicionisme. | Anàlisi de paraules clau o per fitxer origen. |
-| **`maltractament_infantil`** | Negligència domèstica, maltractament físic/emocional a la llar. | Anàlisi de paraules clau o per fitxer origen. |
-| **`violencia_familiar`** | Violència en l'àmbit domèstic no masclista o creuada. | Anàlisi de paraules clau o per fitxer origen. |
-| **`falta_greument_perjudicial`** | Infraccions molt greus de les normes de convivència del centre. | Anàlisi de paraules clau o per fitxer origen. |
-| **`menor_14_infraccio_penal`** | Actes delictius comesos por menors de 14 anys (inimpuntables).| Anàlisi de paraules clau o per fitxer origen. |
-| **`presumpte_delicte`** | Delictes generals que requereixen derivació a Mossos/Fiscalia. | Anàlisi de paraules clau o per fitxer origen. |
-| **`extremisme_violent`** | Processos de radicalització, terrorisme o violència extrema. | Anàlisi de paraules clau o per fitxer origen. |
-| **`conducta_suicida`** | Ideació suïcida activa o verbalitzada, plans de suïcidi. | Anàlisi de paraules clau o per fitxer origen. |
-| **`autolesions`** | Talls, autolesions físiques o intents de fer-se mal. | Anàlisi de paraules clau o per fitxer origen. |
-| **`tca`** | Trastorns de la Conducta Alimentària (anorèxia, bulímia). | Anàlisi de paraules clau o per fitxer origen. |
-| **`consum_substancies`** | Consum de drogues, alcohol, tabac, vapeig a secundària. | Anàlisi de paraules clau o per fitxer origen. |
-| **`conflicte_convivencia`** | Conflictes menors o problemes de convivència sense abús de poder.| Anàlisi de paraules clau o per fitxer origen. |
-| **`acompanyament_alumnat_transgenere`** | Protocols de transició, canvi de nom o suport a alumnes trans. | Anàlisi de paraules clau o per fitxer origen. |
-| **`general`** | Temes transversals de violència o protocols de convivència. | Fallback quan no es detecta cap risc específic. |
-
----
 
 #### Taula 3: Mapeig de Tipus de Document (`document_type`) i Representació (`representation_type`)
 
