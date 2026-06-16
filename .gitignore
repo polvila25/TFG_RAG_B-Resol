@@ -58,3 +58,8 @@ avaluacion-tfg-bresol-key.json
 
 #project
 docs/project/
+
+#png
+*.png
+
+*.pdf
