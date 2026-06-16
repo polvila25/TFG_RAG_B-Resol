@@ -63,3 +63,9 @@ docs/project/
 *.png
 
 *.pdf
+
+#millores
+docs/millores
+
+#model d'evalauació ignorar 
+data/evaluations/

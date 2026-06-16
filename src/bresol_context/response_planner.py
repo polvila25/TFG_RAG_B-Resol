@@ -80,11 +80,11 @@ class ResponsePlanner:
 
         # C) Capa de Protocolo
         else:
-            if score <= 3 or getattr(query_analysis, "urgency_level", "unknown") == "ambiguous":
+            if score <= 3:
                 return ResponsePlan(
                     response_type="collect_minimum_information",
                     should_run_documental_rag=True,
-                    rag_instructions="La informació és insuficient (score <= 3) o ambigua. Executar RAG per a orientació preliminar preventiva."
+                    rag_instructions="La informació és insuficient (score <= 3). Executar RAG per a orientació preliminar preventiva."
                 )
             elif 3 < score < 6:
                 return ResponsePlan(

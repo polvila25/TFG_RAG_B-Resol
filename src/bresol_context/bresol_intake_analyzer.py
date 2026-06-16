@@ -41,7 +41,7 @@ Consulta inicial:
 
 Retorna exactament aquest JSON:
 
-{
+{{
   "bresol_case_type": "string (una de les claus del diccionari de riscos, ex: assetjament_escolar)",
   "risk_category": "string (igual que bresol_case_type)",
   "detected_indicators": ["string (indicadors concrets detectats)"],
@@ -53,9 +53,11 @@ Retorna exactament aquest JSON:
   "phase_assessment": "sense_indicis_delictius | indicis_possibles | indicis_clars_activitat_delictiva | unknown",
   "possible_crime_indicators": ["string"],
   "requires_urgent_review": true/false (true si hi ha conducta_suicida, violencia_sexual o indicis clars de delicte greu o risc vital immediat),
+  "temporal_context_elements": ["string (llista d'expressions literals del text que indiquin moment del dia, dates, repetició, etc. Si no n'hi ha, llista buida [])"],
+  "spatial_context_elements": ["string (llista d'expressions literals del text que indiquin el lloc físic o digital on han passat els fets. Si no n'hi ha, llista buida [])"],
   "enriched_context_hint": "string (pista de context molt breu per a cerca vectorial)",
   "notes": "string or null"
-}
+}}
 """
 
 
@@ -63,7 +65,7 @@ class BresolIntakeAnalyzer:
     def __init__(
         self,
         gemini_api_key: str,
-        gemini_model: str = "gemini-2.5-flash-lite",
+        gemini_model: str = "gemini-1.5-flash",
         temperature: float = 0.0,
     ) -> None:
         self.llm = ChatGoogleGenerativeAI(
@@ -79,7 +81,7 @@ class BresolIntakeAnalyzer:
             raw_response = self.chain.invoke({
                 "user_query": user_query,
                 "risk_taxonomy": json.dumps(
-                    {k: {"label": v["label"], "key_indicators": v["key_indicators"]} 
+                    {k: {"label": v["label"], "key_indicators": v["key_indicators"], "minimum_elements": v.get("minimum_elements", [])} 
                      for k, v in BRESOL_RISK_TAXONOMY.items()},
                     ensure_ascii=False,
                     indent=2,
@@ -109,6 +111,8 @@ class BresolIntakeAnalyzer:
                 requires_urgent_review=self._safe_bool(data.get("requires_urgent_review"), False),
                 enriched_context_hint=self._safe_optional_str(data.get("enriched_context_hint")),
                 notes=self._safe_optional_str(data.get("notes")),
+                temporal_context_elements=self._safe_list(data.get("temporal_context_elements")),
+                spatial_context_elements=self._safe_list(data.get("spatial_context_elements")),
             )
         
         except Exception as exc:

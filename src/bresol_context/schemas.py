@@ -45,6 +45,9 @@ class BresolIntakeAnalysis:
     requires_urgent_review: bool = False
     enriched_context_hint: Optional[str] = None
     notes: Optional[str] = None
+    
+    temporal_context_elements: List[str] = field(default_factory=list)
+    spatial_context_elements: List[str] = field(default_factory=list)
 
 
 

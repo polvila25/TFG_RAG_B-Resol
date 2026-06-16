@@ -96,8 +96,8 @@ class CaseInformationEvaluator:
         # Calculate Minimum Information Score (0 - 10)
         score = self._calculate_score(
             intake, 
-            completed_elements_count=len(completed_parameters), 
-            total_elements_count=len(minimum_elements)
+            completed_parameters=completed_parameters, 
+            minimum_elements=minimum_elements
         )
 
         all_met = len(missing_parameters) == 0
@@ -112,27 +112,66 @@ class CaseInformationEvaluator:
     def _calculate_score(
         self, 
         intake: BresolIntakeAnalysis, 
-        completed_elements_count: int, 
-        total_elements_count: int
+        completed_parameters: list[str], 
+        minimum_elements: list[str]
     ) -> float:
         score = 0.0
         
-        # 1. Base score from completing minimum elements (up to 5 points)
-        if total_elements_count > 0:
-            ratio = completed_elements_count / total_elements_count
+        # 1. Puntuació ponderada per elements mínims (Fins a 5.0 punts)
+        # Els elements crítics pesen més que els secundaris
+        critical_keywords = ["victima", "afectat", "repeticio", "agressiva", "sexual", "suicida", "violencia", "assetjament", "maltractament", "risc"]
+        
+        total_weight = 0.0
+        earned_weight = 0.0
+        
+        for element in minimum_elements:
+            weight = 1.5 if any(kw in element.lower() for kw in critical_keywords) else 0.7
+            total_weight += weight
+            if element in completed_parameters:
+                earned_weight += weight
+                
+        if total_weight > 0:
+            ratio = earned_weight / total_weight
             score += ratio * 5.0
             
-        # 2. Base score from detected indicators (up to 2 points)
+        # 2. Indicadors detectats (Fins a 2.0 punts)
         score += min(len(intake.detected_indicators), 2) * 1.0
         
-        # 3. Victim identified adds solid actionable context (up to 2 points)
+        # 3. Víctima identificada (Reduït de 2.0 a 1.0 per evitar penalitzar en excés alertes anònimes)
         if intake.victim_identified:
-            score += 2.0
+            score += 1.0
             
-        # 4. Valid risk category identified (not unknown/general) adds clarity (up to 1 point)
+        # 4. Bonus de context espai-temporal (Fins a 1.0 punt)
+        query_lower = intake.original_query.lower()
+        
+        # Bonus Temporal
+        temporal_keywords = ["ahir", "avui", "demà", "dema", "dies", "setmanes", "mesos", "sempre", "repetit", "vegades", "curs", "dilluns", "dimarts", "dimecres", "dijous", "divendres", "hora", "mati", "tarda", "pati"]
+        print(f'Elements temporals extrets: {intake.temporal_context_elements}')
+        
+        if intake.temporal_context_elements:
+            score += 0.5
+        elif any(kw in query_lower for kw in temporal_keywords):
+            score += 0.5
+            
+        # Bonus Espacial
+        spatial_keywords = ["pati", "classe", "aula", "passadis", "menjador", "gimnas", "escola", "institut", "xarxes", "whatsapp", "instagram", "tiktok", "carrer", "sortida", "lavabo"]
+        print(f'Elements espacials extrets: {intake.spatial_context_elements}')
+        if intake.spatial_context_elements:
+            score += 0.5
+        elif any(kw in query_lower for kw in spatial_keywords):
+            score += 0.5
+
+        # 5. Categoria de risc vàlida (Fins a 1.0 punt)
         if intake.risk_category not in ["unknown", "general"]:
             score += 1.0
             
-        # Ensure it doesn't exceed 10
-        final_score = round(min(score, 10.0), 1)
+        # 6. Penalització per consultes extremadament curtes (menys de 10 paraules)
+        words = intake.original_query.split()
+        if len(words) < 10:
+            # Penalització lineal: 1 paraula = -2.0, 9 paraules = -0.2
+            penalty = 2.0 * (10 - len(words)) / 10
+            score -= penalty
+            
+        # Assegurar que la puntuació final estigui entre 0.0 i 10.0
+        final_score = round(max(0.0, min(score, 10.0)), 1)
         return final_score

@@ -9,6 +9,7 @@ if project_root not in sys.path:
 import streamlit as st
 import os
 import json
+import uuid
 from datetime import datetime
 from dotenv import load_dotenv
 from src.rag.pipeline_v2 import AdvancedRAGPipeline
@@ -41,6 +42,70 @@ if "rag_model" not in st.session_state:
 
 # Selector de modo de informe en la barra lateral
 with st.sidebar:
+    st.header("🗂️ Gestió d'Alertes")
+    
+    # Manejo de chats
+    if "chats" not in st.session_state:
+        first_id = str(uuid.uuid4())
+        st.session_state.chats = {
+            first_id: {"name": "Alerta 1", "messages": []}
+        }
+    if "current_chat_id" not in st.session_state:
+        st.session_state.current_chat_id = list(st.session_state.chats.keys())[0]
+        
+    chat_keys = list(st.session_state.chats.keys())
+    
+    # Render chats en el sidebar
+    for c_id in chat_keys:
+        c_name = st.session_state.chats[c_id]["name"]
+        
+        col_btn, col_edit, col_del = st.columns([7, 1.5, 1.5], gap="small")
+        with col_btn:
+            is_current = (c_id == st.session_state.current_chat_id)
+            # Usar un pequeño indicador o negrita si es el actual
+            btn_label = f"🟢 {c_name}" if is_current else f"⚪ {c_name}"
+            if st.button(btn_label, key=f"sel_{c_id}", use_container_width=True):
+                st.session_state.current_chat_id = c_id
+                st.rerun()
+        with col_edit:
+            if st.button("✏️", key=f"edit_{c_id}", help="Canviar nom de l'alerta"):
+                st.session_state[f"editing_{c_id}"] = not st.session_state.get(f"editing_{c_id}", False)
+                st.rerun()
+        with col_del:
+            # Només es pot esborrar si hi ha més d'1 xat
+            if len(chat_keys) > 1:
+                if st.button("🗑️", key=f"del_{c_id}", help="Esborrar l'alerta"):
+                    del st.session_state.chats[c_id]
+                    if st.session_state.current_chat_id == c_id:
+                        st.session_state.current_chat_id = list(st.session_state.chats.keys())[0]
+                    st.rerun()
+            else:
+                st.button("🗑️", key=f"del_{c_id}", disabled=True)
+                
+        # Mostrar input per editar el nom
+        if st.session_state.get(f"editing_{c_id}", False):
+            new_name = st.text_input("Nou nom:", value=c_name, key=f"input_{c_id}")
+            if st.button("Guardar nom", key=f"save_{c_id}"):
+                if new_name.strip():
+                    st.session_state.chats[c_id]["name"] = new_name.strip()
+                st.session_state[f"editing_{c_id}"] = False
+                st.rerun()
+
+    st.markdown("---")
+    
+    if len(chat_keys) < 3:
+        if st.button("➕ Nova Alerta", use_container_width=True):
+            new_id = str(uuid.uuid4())
+            # Cercar el número màxim per no repetir noms per defecte
+            next_num = len(chat_keys) + 1
+            st.session_state.chats[new_id] = {"name": f"Alerta {next_num}", "messages": []}
+            st.session_state.current_chat_id = new_id
+            st.rerun()
+    else:
+        st.info("Límit de 3 alertes simultànies assolit.")
+        
+    st.markdown("---")
+
     st.header("Configuració de l'Alerta")
     reporting_mode_selected = st.radio(
         "Tipus de comunicació:",
@@ -95,11 +160,21 @@ with st.sidebar:
     Aquest assistent utilitza intel·ligència artificial i cerca RAG per ajudar a gestionar alertes de convivència escolar i benestar emocional, seguint els protocols oficials.
     """)
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+if "chats" not in st.session_state:
+    first_id = str(uuid.uuid4())
+    st.session_state.chats = {
+        first_id: {"name": "Alerta 1", "messages": []}
+    }
+if "current_chat_id" not in st.session_state:
+    st.session_state.current_chat_id = list(st.session_state.chats.keys())[0]
+
+current_chat = st.session_state.chats[st.session_state.current_chat_id]
+
+# Avís explícit
+st.info("⚠️ **Avís:** Per garantir la qualitat de l'anàlisi, aquesta conversa s'ha de centrar exclusivament en aquesta alerta. Si vols parlar d'un altre cas, si us plau, obre o selecciona un altre xat al menú lateral.")
 
 # Mostrar el historial del chat
-for i, message in enumerate(st.session_state.messages):
+for i, message in enumerate(current_chat["messages"]):
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
         if "metadata" in message:
@@ -107,7 +182,7 @@ for i, message in enumerate(st.session_state.messages):
                 st.markdown(message["metadata"])
                 
         # Formulari d'avaluació per a l'últim missatge de l'assistent
-        if message["role"] == "assistant" and i == len(st.session_state.messages) - 1:
+        if message["role"] == "assistant" and i == len(current_chat["messages"]) - 1:
             if not message.get("feedback_submitted", False) and "original_query" in message:
                 with st.expander("📝 Avaluar aquesta resposta (Opcional)", expanded=False):
                     with st.form(key=f"feedback_form_{i}"):
@@ -167,6 +242,15 @@ for i, message in enumerate(st.session_state.messages):
                                 }
                             }
                             
+                            # --- GUARDAR EN LOCAL (Mecanisme de seguretat / Fallback) ---
+                            try:
+                                eval_dir = Path("data/evaluations")
+                                eval_dir.mkdir(parents=True, exist_ok=True)
+                                with open(eval_dir / "feedback_log.jsonl", "a", encoding="utf-8") as f:
+                                    f.write(json.dumps(feedback_data, ensure_ascii=False) + "\n")
+                            except Exception as local_err:
+                                st.error(f"Error guardant valoració en local: {local_err}")
+
                             # --- GUARDAR EN GOOGLE SHEETS ---
                             try:
                                 import gspread
@@ -186,54 +270,37 @@ for i, message in enumerate(st.session_state.messages):
                                 sh = gc.open("B-Resol Feedback") 
                                 worksheet = sh.sheet1
                                 
-                                worksheet.append_row([
-                                    feedback_data["timestamp"],
-                                    feedback_data["original_query"],
-                                    feedback_data["generated_response"],
-                                    feedback_data["predicted_risk_category"],
-                                    val_global,
-                                    cat_correcta,
-                                    cat_suggerida,
-                                    gestio_info,
-                                    utilitat,
-                                    to_adequat,
-                                    preguntes_xat,
-                                    comentari
-                                ])
-                            except Exception as gs_err:
-                                st.error(f"Error enviant a Google Sheets: {gs_err}")
+                                # Truncar strings llargs per evitar límits de Google Sheets (50,000 chars per cel·la)
+                                # Posem el límit a 4000 caràcters per seguretat i claredat.
+                                query_str = str(feedback_data["original_query"])[:4000]
+                                response_str = str(feedback_data["generated_response"])[:4000]
+                                comment_str = str(comentari)[:4000] if comentari else ""
                                 
                                 worksheet.append_row([
                                     feedback_data["timestamp"],
-                                    feedback_data["original_query"],
-                                    feedback_data["generated_response"],
-                                    feedback_data["predicted_risk_category"],
-                                    val_global,
-                                    cat_correcta,
-                                    cat_suggerida,
-                                    gestio_info,
-                                    utilitat,
-                                    to_adequat,
-                                    preguntes_xat,
-                                    comentari
+                                    query_str,
+                                    response_str,
+                                    str(feedback_data["predicted_risk_category"]),
+                                    str(val_global),
+                                    str(cat_correcta),
+                                    str(cat_suggerida) if cat_suggerida else "",
+                                    str(gestio_info),
+                                    str(utilitat),
+                                    str(to_adequat),
+                                    str(preguntes_xat),
+                                    comment_str
                                 ])
                             except Exception as gs_err:
-                                st.error(f"Error enviant a Google Sheets: {gs_err}")
-                                
-                            # --- GUARDAR EN LOCAL (Comentat segons la petició) ---
-                            # eval_dir = Path("data/evaluations")
-                            # eval_dir.mkdir(parents=True, exist_ok=True)
-                            # with open(eval_dir / "feedback_log.jsonl", "a", encoding="utf-8") as f:
-                            #     f.write(json.dumps(feedback_data, ensure_ascii=False) + "\n")
+                                st.warning(f"Avís: Error de connexió a Google Sheets ({gs_err}). La teva valoració s'ha guardat igualment de forma segura en local.")
                             
                             # Actualitzar estat per ocultar formulari
-                            st.session_state.messages[i]["feedback_submitted"] = True
+                            current_chat["messages"][i]["feedback_submitted"] = True
                             st.success("Valoració enviada correctament. Gràcies per ajudar-nos a millorar!")
                             st.rerun()
 
 # Input de usuario
 if prompt := st.chat_input("Fes la teva consulta sobre els protocols..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    current_chat["messages"].append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
         
@@ -247,7 +314,7 @@ if prompt := st.chat_input("Fes la teva consulta sobre els protocols..."):
                     user_query=prompt, 
                     reporting_mode=reporting_mode_selected, 
                     student_metadata=student_metadata_payload,
-                    chat_history=st.session_state.messages[:-1]
+                    chat_history=current_chat["messages"][:-1]
                 )
                 response_text = result["answer"]
                 
@@ -288,7 +355,7 @@ if prompt := st.chat_input("Fes la teva consulta sobre els protocols..."):
                     st.markdown(metadata_md)
                 
                 # Guardar el mensaje junto con sus metadatos en el historial
-                st.session_state.messages.append({
+                current_chat["messages"].append({
                     "role": "assistant", 
                     "content": response_text,
                     "metadata": metadata_md,
@@ -303,4 +370,4 @@ if prompt := st.chat_input("Fes la teva consulta sobre els protocols..."):
                 import traceback
                 traceback.print_exc() # Imprime en la consola para facilitar el debug
                 st.error(response_text)
-                st.session_state.messages.append({"role": "assistant", "content": response_text})
+                current_chat["messages"].append({"role": "assistant", "content": response_text})

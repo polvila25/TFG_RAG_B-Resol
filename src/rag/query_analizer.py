@@ -155,11 +155,10 @@ Nivells de seguretat (safety_level):
 - low: consulta general o normativa sense risc immediat.
 - unknown: no es pot valorar.
 
-Nivells d'urgència (urgency_level):
-- high: Presència d'amenaces explícites de mal inminent, violència física continuada, intencions d'autolesió o conductes crítiques immediates, o fets d'intensitat/impacte molt greu sobre l'alumne.
-- ambiguous: La consulta és extremadament curta, incomprensible o li falta sentit en l'incident (ex. "ha passat una cosa a la sortida", "un tema estrany"). Si el tipus de comunicació és IDENTIFICADA, assumeix que la identitat de l'alumne implicat ja és coneguda pel centre, per tant NO la classifiquis com a 'ambiguous' només per la manca de noms propis, descriptors o dades perifèriques en el text. Avalua la urgència estrictament per la gravetat/impacte dels fets.
-- medium: Incident identificat d'intensitat moderada que requereix atenció (inclou exclusió, insults, aïllament, rumors o conflictes de convivència), però sense risc vital o físic immediat.
-- low: Consulta general de caràcter informatiu, normatiu o preventiu sense urgència real.
+Nivells d'urgència (urgency_level) — Avalua estrictament per la GRAVETAT dels fets descrits:
+- high: Situacions de risc vital, autolesions, ideació o intents suïcides (conducta_suicida), sospita o certesa d'abús o violència sexual (violencia_sexual), indicis greus de maltractament infantil a la llar (maltractament_infantil), violència física activa, reiterada o amb lesions, o qualsevol fet d'intensitat o impacte molt greu sobre l'alumne. Exemples: "un alumne ha dit que vol morir", "li peguen cada dia al pati", "sospitem d'un abús sexual".
+- medium: Incidents de convivència d'intensitat moderada que requereixen atenció del centre però sense perill físic ni risc vital immediat. Inclou: insults ocasionals, exclusió social, rumors, aïllament, conflictes puntuals de pati, vandalisme material. Exemples: "un grup de nens l'insulten al pati", "no el volen al seu grup".
+- low: Consultes purament informatives, dubtes sobre protocols o normes del centre, o tasques preventives de caràcter teòric sense cap incident real descrit. Exemples: "quin protocol s'aplica en cas d'assetjament?", "quina llei regula la convivència?".
 
 Presència de parts implicades (has_implicated_parties):
 - true: Si es fa referència a persones concretes implicades, ja sigui per nom propi (ej. "Pol", "Joan"), pronoms personal o descripcions de grups/persones (ej. "uns nens del seu curs", "el tutor", "una companya de classe"). També ha de ser true si el tipus de comunicació és IDENTIFICADA.
@@ -180,7 +179,7 @@ Retorna exactament aquest JSON:
   "detected_indicators": ["indicador 1", "indicador 2"],
   "detected_keywords": ["keyword 1", "keyword 2"],
   "safety_level": "low | medium | high | critical | unknown",
-  "urgency_level": "high | medium | low | ambiguous",
+  "urgency_level": "high | medium | low",
   "has_implicated_parties": true | false,
   "detected_features": ["etiqueta 1", "etiqueta 2"],
   "requires_human_review": true | false,
@@ -212,7 +211,7 @@ class QueryAnalyzer:
     def __init__(
         self,
         gemini_api_key: str,
-        gemini_model: str = "gemini-2.5-flash-lite",
+        gemini_model: str = "gemini-1.5-flash",
         temperature: float = 0.0,
     ) -> None:
         self.llm = ChatGoogleGenerativeAI(
@@ -386,7 +385,7 @@ class QueryAnalyzer:
 
         urgency_level = self._safe_choice(
             value=data.get("urgency_level"),
-            allowed={"high", "medium", "low", "ambiguous", "unknown"},
+            allowed={"high", "medium", "low", "unknown"},
             default="unknown",
         )
 
@@ -421,6 +420,13 @@ class QueryAnalyzer:
         if query_type == "mixed":
             retrieval_layer = "application"
             needs_legal_support = True
+
+        # Urgency Floor (Millora 6): pis mínim de seguretat per categories crítiques
+        if risk_category in {"conducta_suicida", "violencia_sexual"}:
+            urgency_level = "high"
+            safety_level = "critical"
+        elif risk_category == "maltractament_infantil" and urgency_level == "low":
+            urgency_level = "medium"
 
         if safety_level in {"high", "critical"} or urgency_level == "high":
             requires_human_review = True
@@ -571,11 +577,11 @@ class QueryAnalyzer:
         if risk_category in {"conducta_suicida", "autolesions", "violencia_sexual"}:
             safety_level = "critical"
 
-        # Heurística para urgency_level
-        if risk_category in {"conducta_suicida", "autolesions", "violencia_sexual"} or safety_level == "critical":
+        # Heurística para urgency_level (sense 'ambiguous' — Millora 4+6)
+        if risk_category in {"conducta_suicida", "autolesions", "violencia_sexual", "maltractament_infantil"} or safety_level == "critical":
             urgency_level = "high"
-        elif len(user_query.strip()) < 40 and risk_category in {"unknown", "general"} and reporting_mode == "anonymous":
-            urgency_level = "ambiguous"
+        elif len(user_query.strip()) < 40 and risk_category in {"unknown", "general"}:
+            urgency_level = "low"
         else:
             urgency_level = "medium"
 

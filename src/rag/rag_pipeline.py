@@ -22,19 +22,29 @@ def _format_list(items: List[str]) -> str:
     return "\n".join(f"- {item}" for item in items)
 
 
+def _clean_disclaimer(content: str) -> str:
+    cleaned = content.lstrip("⚠️ *_\n\t ")
+    prefix = "Es tracta d'una eina de suport per la gestió d'alertes a docents"
+    if cleaned.startswith(prefix):
+        parts = content.split("\n\n", 1)
+        if len(parts) > 1:
+            return parts[1]
+    return content
+
+
 class AdvancedRAGPipeline:
     """
     Pipeline RAG Avançat amb Triage Intel·ligent B-Resol.
     """
     def __init__(self, gemini_api_key: str, gemini_model: str = "gemini-1.5-flash"):
         print("[INIT] Inicialitzant el Sistema Triage B-Resol...")
-        self.intake_analyzer = BresolIntakeAnalyzer(gemini_api_key=gemini_api_key)
+        self.intake_analyzer = BresolIntakeAnalyzer(gemini_api_key=gemini_api_key, gemini_model=gemini_model)
         self.evaluator = CaseInformationEvaluator()
         self.guidance_builder = TeacherGuidanceBuilder()
         self.planner = ResponsePlanner()
 
         print("[INIT] Inicialitzant Query Analyzer...")
-        self.query_analyzer = QueryAnalyzer(gemini_api_key=gemini_api_key)
+        self.query_analyzer = QueryAnalyzer(gemini_api_key=gemini_api_key, gemini_model=gemini_model)
         
         # Lazy loading placeholders per evitar bloqueig de base de dades local i estalviar memòria
         self.retriever = None
@@ -91,6 +101,8 @@ class AdvancedRAGPipeline:
         for msg in chat_history[-6:]:
             role = "Usuari" if msg["role"] == "user" else "Assistent"
             content = msg["content"]
+            if role == "Assistent":
+                content = _clean_disclaimer(content)
             # Limitar la longitud de los mensajes de la historia para mantener el contexto ligero
             if len(content) > 300:
                 content = content[:300] + "..."
@@ -110,13 +122,14 @@ Pregunta independent en català:"""
 
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
+            from langchain_core.output_parsers import StrOutputParser
             llm = ChatGoogleGenerativeAI(
                 google_api_key=self.gemini_api_key,
                 model=self.gemini_model,
                 temperature=0.0
             )
-            res = llm.invoke(condense_prompt)
-            condensed = res.content.strip()
+            chain = llm | StrOutputParser()
+            condensed = chain.invoke(condense_prompt).strip()
             if condensed.startswith('"') and condensed.endswith('"'):
                 condensed = condensed[1:-1]
             print(f"      [Condense] Query original: '{user_query}' -> Standalone: '{condensed}'")
@@ -203,6 +216,8 @@ Pregunta independent en català:"""
             for msg in chat_history[-6:]:
                 role = "Usuari" if msg["role"] == "user" else "Assistent"
                 content = msg["content"]
+                if role == "Assistent":
+                    content = _clean_disclaimer(content)
                 # Si es respuesta del asistente, removemos la metadata técnica para no saturar al LLM
                 if "Veure anàlisi i fonts" in content:
                     content = content.split("Veure anàlisi i fonts")[0]
