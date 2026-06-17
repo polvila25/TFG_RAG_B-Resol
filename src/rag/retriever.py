@@ -6,8 +6,8 @@ from sentence_transformers import SentenceTransformer
 from src.vector_store.config import (
     COLLECTION_NAME,
     EMBEDDING_MODEL_NAME,
-    QDRANT_LOCAL_PATH,
 )
+from src.vector_store.qdrant_connection import get_qdrant_client
 
 
 class RetrievedChunk:
@@ -52,11 +52,10 @@ class QdrantRetriever:
     def __init__(
         self,
         collection_name: str = COLLECTION_NAME,
-        qdrant_path: str = str(QDRANT_LOCAL_PATH),
         embedding_model_name: str = EMBEDDING_MODEL_NAME,
     ) -> None:
         self.collection_name = collection_name
-        self.client = QdrantClient(path=qdrant_path)
+        self.client = get_qdrant_client()
         self.embedding_model = SentenceTransformer(embedding_model_name)
 
     def _build_filter(

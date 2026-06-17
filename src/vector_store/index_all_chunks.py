@@ -1,3 +1,9 @@
+import os
+from dotenv import load_dotenv
+
+# Cargar variables de entorno antes de importar modulos que configuran conexiones
+load_dotenv(override=True)
+
 from src.vector_store.create_collection import recreate_qdrant_collection
 from src.vector_store.create_payload_indexes import create_payload_indexes
 from src.vector_store.generate_embeddings import generate_and_save_embeddings

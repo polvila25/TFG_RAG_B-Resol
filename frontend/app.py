@@ -12,7 +12,23 @@ import json
 import uuid
 from datetime import datetime
 from dotenv import load_dotenv
+
+# Això és CRÍTIC: carregar el .env ABANS d'importar cap fitxer de src
+# perquè config.py s'avalua al moment de fer l'import.
+load_dotenv(override=True)
+
 from src.rag.pipeline_v2 import AdvancedRAGPipeline
+
+PROTOCOL_PDF_MAP = {
+    "falta_greument_perjudicial": "circtuit-protocol-actuacio-faltes-greus.pdf",
+    "acompanyament_alumnat_transgenere": "circtuit-protocol-transgenere.pdf",
+    "ciberassetjament": "circuit-protocol-ciberassetjament.pdf",
+    "menor_14_infraccio_penal": "Protocol-dactuacio-amb-menors-de-catorze-anys-en-situacions-de-conflicte-o-comissio-duna-infraccio-penal.pdf",
+    "maltractament_infantil": "Protocol-dactuacio-entre-els-departaments-de-treball-afers-socials-i-families-i-deducacio-maltractament-infantil-i-adolescent-ambit-educatiu.pdf",
+    "assetjament_escolar": "circuit-actuacio-protocol.pdf",
+    "general": "circuit-actuacio-protocol.pdf",
+    "consum_substancies": "CIRCUIT-SECUNDARIA-DROGUES-DEFINITIU.pdf"
+}
 
 # Configuración de la página (opcional pero recomendado)
 st.set_page_config(page_title="Assistent B-Resol", page_icon="🛡️")
@@ -34,7 +50,6 @@ with col2:
 
 if "rag_model" not in st.session_state:
     with st.spinner("Carregant models de IA (Això pot trigar uns segons la primera vegada)..."):
-        load_dotenv()
         GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
         # Usamos gemini-1.5-flash por defecto ya que es más rápido y mejor para RAG
         GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash") 
@@ -177,6 +192,20 @@ st.info("⚠️ **Avís:** Per garantir la qualitat de l'anàlisi, aquesta conve
 for i, message in enumerate(current_chat["messages"]):
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+        
+        # Mostrar botón de descarga de PDF si existe
+        if message.get("pdf_filename"):
+            pdf_path = os.path.join("assets", "protocols", message["pdf_filename"])
+            if os.path.exists(pdf_path):
+                with open(pdf_path, "rb") as pdf_file:
+                    st.download_button(
+                        label="📥 Descarregar Circuit d'Actuació (PDF)",
+                        data=pdf_file,
+                        file_name=message["pdf_filename"],
+                        mime="application/pdf",
+                        key=f"dl_pdf_{st.session_state.current_chat_id}_{i}"
+                    )
+                    
         if "metadata" in message:
             with st.expander("👁️ Veure anàlisi i fonts recuperades"):
                 st.markdown(message["metadata"])
@@ -355,12 +384,22 @@ if prompt := st.chat_input("Fes la teva consulta sobre els protocols..."):
                     st.markdown(metadata_md)
                 
                 # Guardar el mensaje junto con sus metadatos en el historial
+                risk_category = result['analysis'].risk_category
+                pdf_filename = PROTOCOL_PDF_MAP.get(risk_category)
+                
+                show_pdf = False
+                if pdf_filename:
+                    already_shown = any(m.get("pdf_filename") for m in current_chat["messages"])
+                    if not already_shown:
+                        show_pdf = True
+
                 current_chat["messages"].append({
                     "role": "assistant", 
                     "content": response_text,
                     "metadata": metadata_md,
                     "original_query": prompt,
-                    "risk_category": result['analysis'].risk_category,
+                    "risk_category": risk_category,
+                    "pdf_filename": pdf_filename if show_pdf else None,
                     "feedback_submitted": False
                 })
                 st.rerun()

@@ -5,6 +5,8 @@ from src.vector_store.config import (
     QDRANT_LOCAL_PATH,
     QDRANT_HOST,
     QDRANT_PORT,
+    QDRANT_URL,
+    QDRANT_API_KEY,
 )
 
 
@@ -18,6 +20,9 @@ def get_qdrant_client() -> QdrantClient:
 
     Modo server:
         Se conecta a Qdrant levantado con Docker o servidor.
+        
+    Modo cloud:
+        Se conecta a Qdrant Cloud mediante URL y API Key.
     """
 
     if QDRANT_MODE == "local":
@@ -31,6 +36,15 @@ def get_qdrant_client() -> QdrantClient:
         return QdrantClient(
             host=QDRANT_HOST,
             port=QDRANT_PORT,
+            timeout=60,
+        )
+        
+    if QDRANT_MODE == "cloud":
+        if not QDRANT_URL or not QDRANT_API_KEY:
+            raise ValueError("QDRANT_URL y QDRANT_API_KEY deben estar definidos en .env para el modo cloud.")
+        return QdrantClient(
+            url=QDRANT_URL,
+            api_key=QDRANT_API_KEY,
             timeout=60,
         )
 

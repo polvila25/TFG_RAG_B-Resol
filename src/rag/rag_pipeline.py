@@ -1,5 +1,6 @@
 import os
 import time
+import concurrent.futures
 from typing import Optional, List, Dict, Any
 
 from src.bresol_context.bresol_intake_analyzer import BresolIntakeAnalyzer
@@ -44,7 +45,7 @@ class AdvancedRAGPipeline:
         self.planner = ResponsePlanner()
 
         print("[INIT] Inicialitzant Query Analyzer...")
-        self.query_analyzer = QueryAnalyzer(gemini_api_key=gemini_api_key, gemini_model=gemini_model)
+        self.query_analyzer = QueryAnalyzer(gemini_api_key=gemini_api_key, gemini_model="gemini-2.5-flash-lite")
         
         # Lazy loading placeholders per evitar bloqueig de base de dades local i estalviar memòria
         self.retriever = None
@@ -152,41 +153,58 @@ Pregunta independent en català:"""
         t_total_start = time.time()
         
         # 0. Condensar consulta si hi ha historial de conversa
+        t0 = time.time()
         active_query = self._condense_query(user_query, chat_history)
+        t_condense = time.time() - t0
         
-        # 1. Bresol Intake & Evaluation
-        print("[1/6] Analitzant consulta amb Bresol Intake...")
-        bresol_analysis = self.intake_analyzer.analyze(active_query, reporting_mode)
+        # 1 i 2. Bresol Intake & Evaluation + Query Intent Analysis (EN PARAL·LEL)
+        print("[1/6 i 2/6] Analitzant consulta (Intake i QueryAnalyzer) en paral·lel...")
+        t_parallel_start = time.time()
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            future_intake = executor.submit(self.intake_analyzer.analyze, active_query, reporting_mode)
+            future_query = executor.submit(
+                self.query_analyzer.analyze, 
+                active_query, 
+                reporting_mode, 
+                student_metadata
+            )
+            
+            bresol_analysis = future_intake.result()
+            query_analysis = future_query.result()
+            
         case_report = self.evaluator.evaluate(bresol_analysis)
+        t_parallel_end = time.time() - t_parallel_start
+        print (f'Temps paral·lel: {t_parallel_end:.3f}s')
+        # Guardem els temps combinats per als logs
+        t_intake = t_parallel_end
+        t_query_analysis = 0.0
         
         print(f"      - Risc: {bresol_analysis.risk_category} | Score Info: {case_report.minimum_information_score}/10")
         
-        # 2. Query Intent Analysis
-        print("[2/6] Analitzant intencionalitat (QueryAnalyzer)...")
-        query_analysis = self.query_analyzer.analyze(
-            active_query,
-            reporting_mode=reporting_mode,
-            student_metadata=student_metadata
-        )
-        
         # 3. Response Planning (Routing)
         print("[3/6] Planificant ruta de resposta...")
+        t3 = time.time()
         response_plan = self.planner.plan(
             bresol_analysis,
             case_report,
             query_analysis,
             is_out_of_scope=query_analysis.is_out_of_scope
         )
-        print(f"      - Tipus Resposta: {response_plan.response_type} | RAG Actiu: {response_plan.should_run_documental_rag}")
+        t_planning = time.time() - t3
+        print(f"      - Tipus Resposta: {response_plan.response_type} | RAG Actiu: {response_plan.should_run_documental_rag} | Temps planning: {t_planning:.3f}s")
         
         # 4. Building Teacher Guidance (CNV, Empathy, Limits)
+        t4 = time.time()
         teacher_guidance = self.guidance_builder.build(bresol_analysis, case_report)
+        t_guidance = time.time() - t4
         
         # 5. Conditional Document Retrieval (RAG)
         final_chunks = []
         context = "No s'ha realitzat cerca documental per falta d'informació mínima."
         enriched = None
         
+        t5 = time.time()
         if response_plan.should_run_documental_rag:
             print("\n[4/6] Recuperació RAG Activa...")
             enriched = enrich_query(active_query, query_analysis, bresol_analysis)
@@ -208,7 +226,8 @@ Pregunta independent en català:"""
             context = self.context_builder.build(final_chunks)
         else:
             print("\n[4/6] Recuperació RAG Omesa (Planificador).")
- 
+        t_rag = time.time() - t5
+  
         # Format chat history for generator context
         history_context = ""
         if chat_history:
@@ -226,6 +245,7 @@ Pregunta independent en català:"""
 
         # 6. LLM Generation
         print("[5/6] Generant resposta amb Prompt Dinàmic...")
+        t6 = time.time()
         dynamic_prompt = get_prompt(
             response_type=response_plan.response_type,
             risk_category=bresol_analysis.risk_category,
@@ -267,8 +287,18 @@ Pregunta independent en català:"""
         }
         
         answer = generator.generate(filtered_variables)
+        t_generation = time.time() - t6
         
         t_total = time.time() - t_total_start
+        print(f"\n--- DESGLOSSAMENT DE TEMPS DEL PIPELINE ---")
+        print(f"0. Condensar consulta (historial): {t_condense:.3f}s")
+        print(f"1. Bresol Intake & Evaluation:     {t_intake:.3f}s")
+        print(f"2. Query Analyzer (intenció):       {t_query_analysis:.3f}s")
+        print(f"3. Response Planning (routing):    {t_planning:.3f}s")
+        print(f"4. Guidance Builder:               {t_guidance:.3f}s")
+        print(f"5. Document Retrieval (RAG):       {t_rag:.3f}s")
+        print(f"6. LLM Generation:                 {t_generation:.3f}s")
+        print(f"-------------------------------------------")
         print(f"PIPELINE FINALITZAT en {t_total:.3f}s")
         print("="*60)
         

@@ -62,10 +62,13 @@ docs/project/
 #png
 *.png
 
-*.pdf
+docs/architecture/*.pdf
 
 #millores
 docs/millores
 
 #model d'evalauació ignorar 
 data/evaluations/
+
+
+assets/protocols/lista_circuits.txt
