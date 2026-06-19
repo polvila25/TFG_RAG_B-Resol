@@ -181,6 +181,7 @@ Pregunta independent en català:"""
         t_query_analysis = 0.0
         
         print(f"      - Risc: {bresol_analysis.risk_category} | Score Info: {case_report.minimum_information_score}/10")
+        print(f"      - Completats: {len(case_report.completed_parameters)}/{len(case_report.completed_parameters) + len(case_report.missing_parameters)} | Faltants: {[mp.parameter_name for mp in case_report.missing_parameters]} | Indicadors: {len(bresol_analysis.detected_indicators)}")
         
         # 3. Response Planning (Routing)
         print("[3/6] Planificant ruta de resposta...")

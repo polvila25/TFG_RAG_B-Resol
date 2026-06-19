@@ -46,6 +46,13 @@ Aquesta taula recull les categories formalment admeses pel payload del chunk i u
 
 ## 2. Descripció Detallada de les Fases
 
+### Fase Inicial: Ingestió, Segmentació Semàntica (Chunking) i Enriquiment de Metadades 
+
+Aquesta fase és el nucli de la preparació de les dades en fred (ingestió offline). La seva finalitat és agafar els protocols oficials de la Generalitat, lleis i guies en PDF i transformar-los en fragments de text altament cercables, semàntics i enriquits per emmagatzemar-los a la base de dades vectorial. Es fa un cop només abans que el sistema comenci a funcionar.
+
+Aquesta fase està explicada en detall al altre document fase4_chunking_documentacio.
+
+---
 
 ### Fase 1: Rebuda alerta
 
@@ -94,6 +101,11 @@ Aquesta fase, el seu objectiu és diagnosticar de manera automàtica i determini
 
 A més servirà més endavant per donar-li al Chatbot (en les fases posteriors) un "guió" exacte de què li ha de preguntar a l'usuari, és a dir podrem realitzar un prompt molt més acurat per obtenir millor resposta i assegurant que recull tota la informació obligatòria de manera guiada i segura abans de tancar el cas.
 
+**Sistema de Puntuació Estricte (Scoring):** A diferència de sistemes RAG ordinaris, aquest pipeline implementa un avaluador algorítmic que processa el JSON i calcula una puntuació de completesa de l'alerta (del 0 al 10):
+- **Verificació de detall:** S'aplica un filtre estricte que comprova la llargada de la consulta (mínim 20 paraules) i busca vocabulari explícit. Per exemple, si no troba paraules com "sempre", "repetit" o "cada dia", l'avaluador marcarà automàticament com a "Faltant" l'element obligatori de *repetició temporal*, fins i tot si la IA inicial havia assumit que sí.
+- **Penalitzacions matemàtiques:** S'apliquen penalitzacions exponencials (fins a -3.0 punts) a les consultes curtes per forçar que el RAG demani més informació i evitar activar protocols greus amb indicis insuficients.
+
+
 
 ### Fase 3: Anàlisi de la Consulta incial del docent (fase pre-recuperació)
  L'objectiu d'aquesta fase és exclusivament "entendre i classificar" què està demanant el docent abans d'anar a buscar res a la base de dades. És una fase de pre-processament on només s'utilitza la consulta del docent. 
@@ -106,9 +118,9 @@ A més servirà més endavant per donar-li al Chatbot (en les fases posteriors) 
 *   **`has_implicated_parties`**: Flag que determina si es fan referències a persones implicades concretes.
 *   **`detected_features`**: Llista d'etiquetes específiques que descriuen l'agressió o incident (ex. "violència física", "exclusió").
 
-### Fase 3: Planificació de la Resposta i Enrutament (`ResponsePlanner`)
+### Fase 4: Planificació de la Resposta i Enrutament (`ResponsePlanner`)
 
-He dissenyat una estategia d'enrutament que rep l'avaluació de les dades del cas (Fase 1) i l'anàlisi de la intencionalitat de la consulta (Fase 2) per prendre la decisió estratègica de com ha de respondre el sistema. La seva funció és establir la ruta de la resposta, decidir si s'ha d'executar o no la cerca documental (RAG) i preparar instruccions directives clares per al model.
+He dissenyat una estategia d'enrutament que rep l'avaluació de les dades del cas (Fase 2) i l'anàlisi de la intencionalitat de la consulta (Fase 3) per prendre la decisió estratègica de com ha de respondre el sistema. La seva funció és establir la ruta de la resposta, decidir si s'ha d'executar o no la cerca documental (RAG) i preparar instruccions directives clares per al model.
 
 Aquesta planificació s'aplica mitjançant un arbre de decisions per codi amb 4 prioritats clares:
 
@@ -128,15 +140,7 @@ Com a resultat, el planificador retorna un a resposta que conte el camps: `respo
 
 ---
 
-## 3. Fase 4: Ingestió, Segmentació Semàntica (Chunking) i Enriquiment de Metadades 
-
-Aquesta fase és el nucli de la preparació de les dades en fred (ingestió offline). La seva finalitat és agafar els protocols oficials de la Generalitat, lleis i guies en PDF i transformar-los en fragments de text altament cercables, semàntics i enriquits per emmagatzemar-los a la base de dades vectorial.
-
-Aquesta fase està explicada en detall al altre document fase4_chunking_documentacio.
-
----
-
-## 5. Fase 5: Recuperació i Re-ranking Semàntic (RAG en Calent)
+### Fase 5: Recuperació i Re-ranking Semàntic (RAG en Calent)
 
 Un cop els chunks estan emmagatzemats amb la seva estructura de metadades a Qdrant, la cerca en temps real funciona sota una estratègia híbrida per maximitzar la precisió:
 
@@ -160,7 +164,7 @@ Qdrant no realitza una cerca purament vectorial sobre tot el volum de dades. Aba
 
 Això redueix el soroll documental al 0% abans de realitzar cap operació de semblança.
 
-### B. Recuperación Vectorial Inicial (`Top-K`)
+### C. Recuperació Vectorial Inicial (`Top-K`)
 *   Es genera el vector de la consulta enriquida mitjançant el model d'embeddings.
 *   Es recuperen els millors **$K$ candidats** (configurat en `top_k = 15`). El score retornat per Qdrant és una similitud de cosinus (valors típics de 0.40 a 0.75).
 
@@ -172,17 +176,17 @@ Per solucionar la bretxa lèxica (quan la consulta de l'usuari no utilitza les m
 
 ---
 
-## 6. Fase 6: Generació de la Resposta i Prompt Dinàmic
+### Fase 6: Generació de la Resposta i Prompt Dinàmic
 
 El `ContextBuilder` agrupa els fragments en un sol text, assegurant que cada un contingui la seva referència a la font en format de cita natural (ex. *"Segons la pàgina 12 del Protocol d'Assetjament Escolar..."*).
 El model generador final rep aquest context lliure de soroll juntament amb les metadades de triatge i processa el prompt dinàmic generant la sortida estructurada en tres eixos:
 1.  **Valoració Inicial de la Situació**: Justificació del risc i de la urgència per al docent.
 2.  **Mesures Operatives Immediates**: Accions exigides pel protocol per a les primeres 24-48 hores.
-3.  **Guia d'Indagació i Entrevista**: Llista de preguntes empàtiques suggerides basades en la comunicació no violenta (CNV), dissenyades expressament per resoldre els buits d'informació detectats a la Fase 2 sense generar alarma.
+3.  **Guia d'Indagació i Entrevista**: Llista de preguntes empàtiques suggerides, dissenyades expressament per resoldre els buits d'informació detectats a la Fase 2 sense generar alarma. A més, aquesta fase compta amb una funció ` que injecta llistes de preguntes prohibides (`avoid_questions`) definides prèviament al diccionari de risc de b-resol. Això prohibeix estrictament al LLM suggerir que el docent pregunti coses com "Per què no t'has defensat?", garantint la no-revictimització de l'alumne.
 
 ---
 
-## 7. Resum de Paràmetres Clau i Umbrales
+### Taula Resum de Paràmetres Clau de les fases RAG
 
 | Fase | Paràmetre / Component | Configuració / Umbral | Propòsit Tècnic |
 | :--- | :--- | :--- | :--- |
@@ -192,17 +196,52 @@ El model generador final rep aquest context lliure de soroll juntament amb les m
 | **Fase 4** | Separadors del Splitter | `["\n\n", "\n", " ", ".", ...]`, `is_separator_regex = False` | Preserva l'estructura de paràgrafs i llistes sinó trencant paraules. |
 | **Fase 5** | Cerca Vectorial (`top_k`) | `15` chunks | Fase de recall ampli per assegurar la captura de tots els potencials candidats. |
 | **Fase 5** | Selecció Final (`top_n`) | `4` o `5` chunks | Reducció estricta del soroll documental enviat a l'LLM, millorant velocitat i coherència. |
-| **Fase 3** | Puntuació de Completesa Mínima | `3` (Escala 1-10) | Umbral de seguretat sota el qual es prioritza la recerca d'informació via xat. |
-
-
+| **Fase 4 (Enrutament)** | Llindars de Puntuació Estricta | `≤4` (Massa ambigu), `4-7` (Parcial), `≥7` (Cas Complet) | Umbrals dinàmics que determinen si s'ha de mostrar el protocol complet o si s'ha de prioritzar la recerca d'informació guiada via xat. |
 
 ---
 
-## 8. Aspectes comentats a la reunió d'evolució
+## 3. Arquitectura del Frontend i Experiència d'Usuari (UX/UI)
+
+L'arquitectura del sistema RAG es complementa amb una interfície d'usuari (desenvolupada en **Streamlit**) dissenyada específicament per fer de pont entre la complexitat del model d'Intel·ligència Artificial i la necessitat d'operativitat ràpida d'un docent davant d'una situació d'emergència. 
+
+Aquesta capa de frontend no només actua com a "finestra" d'entrada, sinó que incorpora solucions d'enginyeria de software.
+
+### 3.1. Gestió d'Estat i Aïllament de Context (Multi-xat)
+
+Un dels reptes principals en sistemes RAG conversacionals és  **perdre el fil del context**: quan un mateix usuari consulta sobre dos casos diferents consecutivament, el sistema pot barrejar les dades de l'Alerta A amb les de l'Alerta B en l'anàlisi de seguiment (*Standalone Query*).
+
+Per mitigar aquest problema de manera robusta, l'arquitectura del frontend s'ha dissenyat sota un patró de **gestió d'estat aïllat**:
+- S'ha abandonat la llista única d'historial per passar a una estructura basada en **diccionaris** (`st.session_state.chats`).
+- El sistema permet gestionar fins a **3 fils de conversa paral·lels** (3 alertes diferents), cadascun amb el seu propi identificador únic (UUID), nom editable i historial de missatges tancat.
+- Quan el docent envia una consulta, el frontend exclusivament passa al pipeline RAG la llista de missatges de la conversa *activa*. Això garanteix que el backend RAG (que és *stateless* o sense estat) operi en un entorn clínic i pur, evitant qualsevol risc de confusió entre casos de naturalesa dispar.
+
+### 3.2. Avaluació i Tolerància a Fallades 
+
+Per garantir la millora contínua i l'avaluació del rendiment del sistema (amb l'objectiu d'analitzar l'encert de les categories de risc detectades i la utilitat per part del docent), la interfície incorpora un **mòdul de feedback dinàmic**. Aquest mòdul està dissenyat amb criteris d'alta disponibilitat:
+
+1. **Estructura de dades segures:** Es recopila la consulta original, la categoria de risc prevista pel sistema, i els 8 ítems de valoració del docent en un objecte JSON estructurat.
+
+
+### 3.3. Compliment Legal i Protecció del Menor
+
+Atès l'entorn altament sensible (protecció de la infància i aplicació de la normativa LOPIVI), la interfície està fortificada amb disseny orientat al risc:
+- **Avís legal al docent:** La interfície mostra un text d'avís sempre al inici per subratllar que el sistema RAG és exclusivament una eina orientativa. Aquest avís allibera de responsabilitat tècnica a la plataforma, recordant explícitament que "la decisió final sobre les actuacions a seguir és responsabilitat del docent, l'equip directiu i els professionals competents del centre".
+- **Avisos Contextuals en Pantalla:** El sistema guia visualment l'usuari (mitjançant requadres `st.info`) sobre com ha d'interactuar amb la plataforma, exigint la no-mescla de casos al mateix xat.
+
+### 3.4. Accés Directe a Circuits Oficials
+
+Per tal de reduir el temps de reacció en situacions crítiques, el frontend integra un sistema de lliurament dinàmic de documentació:
+- Quan el sistema detecta que l'alerta assoleix la maduresa necessària i correspon a un criteri de risc específic (ex. *assetjament escolar*, *consum de substàncies*, etc.), la interfície renderitza automàticament un botó d'acció destacat.
+- Aquest botó permet al docent descarregar directament el document **PDF del circuit d'actuació oficial** vinculat a aquell risc.
+- **Control de redundància:** Per mantenir el xat net, l'aplicació utilitza variables d'estat per assegurar-se que **el botó de descàrrega es mostra únicament una vegada per cada xat**. D'aquesta manera, si el docent continua fent preguntes de seguiment dins la mateixa conversa, el botó ja no es repeteix, garantint una experiència d'usuari (UX) més fluida i menys invasiva.
+
+---
+
+## 4. Aspectes comentats a la reunió d'evolució
 
 A continuació, es detallen dues de les qüestions tècniques comentades durant la reunió de seguiment, per tal de deixar constància de la seva justificació tècnica i la solució implementada.
 
-### 8.1. Per què la puntuació de similitud dels fragments recuperats pot semblar "baixa" (ex. 0.5)?
+### 4.1. Per què la puntuació de similitud dels fragments recuperats pot semblar "baixa" (ex. 0.5)?
 
 Es pot observar que els fragments (`chunks`) seleccionats com a "millors candidats" després de cada consulta a vegades retornen una puntuació de similitud del cosinus (Cosine Similarity) que oscil·la al voltant del 0.5 o el 0.6. A primera vista, això pot semblar un encert "baix" (com si fos un 5 sobre 10 a l'escola), però en l'àmbit dels *embeddings* d'alta dimensionalitat i la cerca semàntica asimètrica, aquesta interpretació no és correcta. 
 
@@ -213,7 +252,7 @@ La similitud del cosinus no mesura si les paraules són idèntiques, sinó la pr
 
 Com que l'estil, el to i la densitat del vocabulari són diametralment oposats, el model d'embeddings els assigna una distància que pot reflectir un *score* de 0.55. Això no significa que el document sigui irrellevant, sinó que és **semànticament proper sense ser lèxicament idèntic**. Una similitud de 0.5 - 0.7 és, de fet, l'estàndard esperat i saludable per a resultats extremadament vàlids en entorns RAG legals i educatius, on s'intenta connectar el llenguatge del docent estressat amb el llenguatge fred d'un protocol de la Generalitat.
 
-### 8.2. Millora implementada: Prevenció de la pèrdua del fil de conversa al xat
+### 4.2. Millora implementada: Prevenció de la pèrdua del fil de conversa al xat
 
 Inicialment, durant les proves es va comentar que el sistema fallava quan l'usuari feia preguntes de seguiment curtes, provocant que el xat "perdés el fil". Per exemple:
 1.  **Usuari:** *"Què he de fer si un alumne pateix assetjament?"* (El sistema respon bé amb el protocol).
@@ -222,10 +261,26 @@ Inicialment, durant les proves es va comentar que el sistema fallava quan l'usua
 **Solució implementada: Contextualització de Consultes (Standalone Query)**
 Aquesta problemàtica s'ha solucionat de manera robusta mitjançant la tècnica de memòria conversacional (detallada en profunditat al llarg de la Fase 5 de l'arquitectura). 
 
+A més, s'han construït 3 xats, cadascun dedicat a tractar un cas diferent. 
+
 Ara, abans d'anar a buscar res a la base de dades vectorial, el sistema passa per una sub-fase de reescriptura. S'agafa l'historial del xat i la pregunta nova, i s'utilitza un model LLM per unificar-ho tot en una única consulta autònoma, rica i independent:
 *   **Pregunta original de l'usuari:** *"I si passa fora del centre?"*
 *   **Pregunta interna reescrita pel sistema:** *"Quins són els passos a seguir segons el protocol si l'assetjament escolar entre alumnes ocorre fora de les instal·lacions del centre educatiu?"*
 
 Aquesta nova consulta "reescrita" o condensada és la que realment s'envia a Qdrant per fer la cerca vectorial. Això garanteix que la cerca tingui absolutament tot el context necessari, que es trobin els fragments de text correctes, i que l'assistent virtual **no perdi mai el fil** de la conversa amb el docent.
+
+### 4.3. Migració a Qdrant Cloud: Escalabilitat i Concurrència
+Durant les fases de proves amb múltiples fils de xat oberts a la interfície de Streamlit, es va detectar que el motor de Qdrant funcionant en mode local (emmagatzematge en fitxer al disc) generava excepcions de tipus lock (bloqueig de base de dades). Això passava perquè l'arquitectura local no està dissenyada per rebre múltiples consultes de lectura concurrents de forma òptima.
+
+Per resoldre aquest coll d'ampolla i apropar l'arquitectura a un entorn de producció real (amb múltiples docents utilitzant la plataforma alhora), es va decidir migrar l'emmagatzematge vectorial a un clúster remot (Qdrant Cloud). Aquesta decisió estratègica proporciona tres grans avantatges:
+
+*   **Alta disponibilitat:** Permet consultes RAG totalment concurrents sense col·lisions.
+*   **Desacoblament:** Fa que l'aplicació de Streamlit sigui stateless i molt més lleugera per al desplegament.
+
+### 4.4. Estratègia Multi-Model: Optimització de Latència i Raonament
+L'arquitectura RAG fa un ús dels models de llenguatge (LLMs) segons els requisits de cada fase, balancejant velocitat de resposta i capacitat d'empatia:
+- **Fases de Triatge i Anàlisi Ràpida (Fases 2 i 3):** S'utilitza **Gemini 2.5 Flash Lite**. En aquestes fases només necessitem extreure dades estructurades en format JSON i fer cerques de paraules clau. L'ús de la versió "Lite" assegura latències mínimes (inferiors a 1 segon) i optimitza radicalment els costos computacionals durant l'embut inicial d'entrada.
+- **Fase de Generació Final (Fase 6):** S'utilitza **Gemini 2.5 Flash**. Com que aquesta fase requereix un alt nivell de raonament, lectura de múltiples pàgines de protocols complexos, capacitat de síntesi i sobretot, un to empàtic per respondre al docent, es reserva l'ús del model de major capacitat exclusivament per aquest coll d'ampolla final.
+
 
 [def]: assets/img_documentacion/fase_arquitectura.png

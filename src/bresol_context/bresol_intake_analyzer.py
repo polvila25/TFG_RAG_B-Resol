@@ -39,6 +39,14 @@ Criteris Fase 2 b-resol:
 Consulta inicial:
 {user_query}
 
+CRITERI D'ESTRICTE RIGOR per a missing_minimum_elements:
+- Un element NOMÉS es considera present si la consulta el descriu EXPLÍCITAMENT amb detall suficient.
+- Una sola menció d'agressió ("li van pegar") NO confirma "intencionalitat" (pot ser accidental o reacció impulsiva).
+- Un sol fet temporal ("ahir", "avui") NO confirma "repeticio_temporal" (un únic episodi no és repetició sostinguda).
+- Mencionar un lloc ("al pati") NO confirma "desequilibri_poder" (cal evidència explícita de diferència de força, edat, nombre o estatus social).
+- En cas de DUBTE sobre si un element està cobert, SEMPRE afegeix-lo a missing_minimum_elements. És preferible demanar de més que donar per suposat.
+- La llista missing_minimum_elements ha de ser EXHAUSTIVA: revisa CADA element de minimum_elements del risc detectat i decideix un per un.
+
 Retorna exactament aquest JSON:
 
 {{

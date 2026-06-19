@@ -28,6 +28,9 @@ class CaseInformationEvaluator:
         missing_info_qs = taxonomy_info.get("missing_info_questions", [])
         safe_id_qs = taxonomy_info.get("safe_identification_questions", [])
 
+        query_lower = intake.original_query.lower()
+        word_count = len(intake.original_query.split())
+
         for idx, element in enumerate(minimum_elements):
             is_missing = False
             
@@ -45,16 +48,17 @@ class CaseInformationEvaluator:
                         is_missing = True
                         break
                 
-                # 4. Strict length fallback: queries under 12 words with generic statements
-                # lack sufficient detail to prove intent, repetition, or power imbalance.
-                # This strict validation only applies if the alert is explicitly anonymous.
-                if intake.reporting_mode == "anonymous" and len(intake.original_query.split()) < 12:
-                    query_lower = intake.original_query.lower()
-                    if element == "repeticio_temporal" and not any(w in query_lower for w in ["sempre", "repetit", "cada dia", "fa temps", "mesos", "setmanes", "diari", "habitual"]):
+                # 4. Strict text-evidence fallback for ALL reporting modes.
+                # Queries under 20 words lack sufficient detail to prove
+                # intent, repetition, or power imbalance.
+                if word_count < 20:
+                    if element == "repeticio_temporal" and not any(w in query_lower for w in ["sempre", "repetit", "cada dia", "fa temps", "mesos", "setmanes", "diari", "habitual", "continuament", "sovint", "constantment"]):
                         is_missing = True
-                    elif element == "desequilibri_poder" and not any(w in query_lower for w in ["grup", "més fort", "més gran", "popular", "superior", "abús", "abus", "amenaça", "intimid"]):
+                    elif element == "desequilibri_poder" and not any(w in query_lower for w in ["grup", "més fort", "més gran", "popular", "superior", "abús", "abus", "amenaça", "intimid", "banda", "sol contra", "tots contra"]):
                         is_missing = True
-                    elif element == "intencionalitat" and not any(w in query_lower for w in ["volen", "vol", "adrede", "a propòsit", "intencionat", "per fer mal"]):
+                    elif element == "intencionalitat" and not any(w in query_lower for w in ["volen", "vol", "adrede", "a propòsit", "intencionat", "per fer mal", "expressament", "deliberat"]):
+                        is_missing = True
+                    elif element == "repeticio_o_persistencia" and not any(w in query_lower for w in ["sempre", "repetit", "cada dia", "persistent", "continua", "no para", "constantment", "sovint"]):
                         is_missing = True
 
             if is_missing:
@@ -117,7 +121,7 @@ class CaseInformationEvaluator:
     ) -> float:
         score = 0.0
         
-        # 1. Puntuació ponderada per elements mínims (Fins a 5.0 punts)
+        # 1. Puntuació ponderada per elements mínims (Fins a 6.0 punts)
         # Els elements crítics pesen més que els secundaris
         critical_keywords = ["victima", "afectat", "repeticio", "agressiva", "sexual", "suicida", "violencia", "assetjament", "maltractament", "risc"]
         
@@ -132,44 +136,49 @@ class CaseInformationEvaluator:
                 
         if total_weight > 0:
             ratio = earned_weight / total_weight
-            score += ratio * 5.0
+            score += ratio * 6.0
             
-        # 2. Indicadors detectats (Fins a 2.0 punts)
-        score += min(len(intake.detected_indicators), 2) * 1.0
+        # 2. Indicadors detectats (Fins a 1.0 punt, reduït de 2.0)
+        score += min(len(intake.detected_indicators), 2) * 0.5
         
-        # 3. Víctima identificada (Reduït de 2.0 a 1.0 per evitar penalitzar en excés alertes anònimes)
+        # 3. Víctima identificada (0.5 punts, reduït de 1.0)
         if intake.victim_identified:
-            score += 1.0
+            score += 0.5
             
-        # 4. Bonus de context espai-temporal (Fins a 1.0 punt)
+        # 3b. Agressor identificat (0.5 punts, NOU)
+        if intake.aggressor_identified:
+            score += 0.5
+            
+        # 4. Bonus de context espai-temporal (Fins a 0.5 punts, reduït de 1.0)
         query_lower = intake.original_query.lower()
         
-        # Bonus Temporal
+        # Bonus Temporal (0.25 punts)
         temporal_keywords = ["ahir", "avui", "demà", "dema", "dies", "setmanes", "mesos", "sempre", "repetit", "vegades", "curs", "dilluns", "dimarts", "dimecres", "dijous", "divendres", "hora", "mati", "tarda", "pati"]
         print(f'Elements temporals extrets: {intake.temporal_context_elements}')
         
         if intake.temporal_context_elements:
-            score += 0.5
+            score += 0.25
         elif any(kw in query_lower for kw in temporal_keywords):
-            score += 0.5
+            score += 0.25
             
-        # Bonus Espacial
+        # Bonus Espacial (0.25 punts)
         spatial_keywords = ["pati", "classe", "aula", "passadis", "menjador", "gimnas", "escola", "institut", "xarxes", "whatsapp", "instagram", "tiktok", "carrer", "sortida", "lavabo"]
         print(f'Elements espacials extrets: {intake.spatial_context_elements}')
         if intake.spatial_context_elements:
-            score += 0.5
+            score += 0.25
         elif any(kw in query_lower for kw in spatial_keywords):
-            score += 0.5
+            score += 0.25
 
-        # 5. Categoria de risc vàlida (Fins a 1.0 punt)
+        # 5. Categoria de risc vàlida (0.5 punts, reduït de 1.0)
         if intake.risk_category not in ["unknown", "general"]:
-            score += 1.0
+            score += 0.5
             
-        # 6. Penalització per consultes extremadament curtes (menys de 10 paraules)
+        # 6. Penalització per consultes curtes (menys de 20 paraules)
         words = intake.original_query.split()
-        if len(words) < 10:
-            # Penalització lineal: 1 paraula = -2.0, 9 paraules = -0.2
-            penalty = 2.0 * (10 - len(words)) / 10
+        if len(words) < 20:
+            # Penalització més agressiva: a menys paraules, major penalització
+            # 5 paraules = -3.0, 10 paraules = -1.5, 19 paraules = -0.15
+            penalty = 3.0 * (20 - len(words)) / 20
             score -= penalty
             
         # Assegurar que la puntuació final estigui entre 0.0 i 10.0
