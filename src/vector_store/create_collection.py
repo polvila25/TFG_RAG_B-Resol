@@ -6,22 +6,22 @@ from src.vector_store.qdrant_connection import get_qdrant_client
 
 def recreate_qdrant_collection() -> None:
     """
-    Crea o recrea la colección Qdrant.
+    Crea o recrea la col·lecció Qdrant.
 
-    IMPORTANTE:
-    - En desarrollo va bien porque borra e indexa desde cero.
-    - Más adelante, en producción, mejor usar colecciones versionadas.
+    IMPORTANT:
+    - En desenvolupament va bé perquè esborra i indexa des de zero.
+    - Més endavant, en producció, millor usar col·leccions versionades.
     """
 
     client = get_qdrant_client()
 
     print("=" * 80)
-    print("[QDRANT] Recreating collection")
+    print("[QDRANT] Recreant col·lecció")
     print("=" * 80)
 
-    print(f"[INFO] Collection name: {COLLECTION_NAME}")
-    print(f"[INFO] Vector size: {VECTOR_SIZE}")
-    print("[INFO] Distance: Cosine")
+    print(f"[INFO] Nom de la col·lecció: {COLLECTION_NAME}")
+    print(f"[INFO] Mida del vector: {VECTOR_SIZE}")
+    print("[INFO] Distància: Cosinus")
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
@@ -35,6 +35,6 @@ def recreate_qdrant_collection() -> None:
         collection_name=COLLECTION_NAME,
     )
 
-    print("[OK] Collection recreated successfully.")
-    print(f"[INFO] Collection status: {collection_info.status}")
-    print(f"[INFO] Points count: {collection_info.points_count}")
+    print("[OK] Col·lecció recreada correctament.")
+    print(f"[INFO] Estat de la col·lecció: {collection_info.status}")
+    print(f"[INFO] Recompte de punts: {collection_info.points_count}")

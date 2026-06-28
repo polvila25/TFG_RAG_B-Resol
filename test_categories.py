@@ -25,7 +25,7 @@ if 'falta_greument_perjudicial' in old_taxonomy:
 if 'conflicte_convivencia' in old_taxonomy:
     old_taxonomy['violencia_puntual'] = old_taxonomy.pop('conflicte_convivencia')
 
-print('--- EXECUTING OLD TAXONOMY ---')
+print('--- EXECUTANT TAXONOMIA ANTIGA ---')
 for q in queries:
     try:
         res = chain.invoke({
@@ -40,7 +40,7 @@ for q in queries:
     except Exception as e:
         print(f"Q: {q} -> ERROR: {e}")
 
-print('\\n--- EXECUTING NEW TAXONOMY ---')
+print('\\n--- EXECUTANT TAXONOMIA NOVA ---')
 for q in queries:
     try:
         res = chain.invoke({

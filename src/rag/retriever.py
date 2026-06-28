@@ -40,13 +40,13 @@ class RetrievedChunk:
 
 class QdrantRetriever:
     """
-    Retriever semántico sobre Qdrant.
+    Retriever semàntic sobre Qdrant.
 
-    Responsabilidades:
+    Responsabilitats:
     - Generar embedding de la query.
-    - Aplicar filtros de payload.
-    - Recuperar top_k candidatos.
-    - Devolver chunks con score y metadatos.
+    - Aplicar filtres de payload.
+    - Recuperar top_k candidats.
+    - Retornar chunks amb score i metadades.
     """
 
     def __init__(
@@ -127,13 +127,13 @@ class QdrantRetriever:
         language: Optional[str] = None,
     ) -> List[RetrievedChunk]:
         """
-        Recupera chunks desde Qdrant.
+        Recupera chunks des de Qdrant.
 
         query:
-            Query enriquecida.
+            Query enriquida.
 
         top_k:
-            Número de candidatos iniciales antes del reranking.
+            Nombre de candidats inicials abans del reranking.
         """
 
         query_vector = self.embedding_model.encode(

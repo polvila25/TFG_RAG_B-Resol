@@ -8,8 +8,8 @@ from src.bresol_context.risk_type import BRESOL_RISK_TAXONOMY
 
 class TeacherGuidanceBuilder:
     """
-    Constructs the conversational guidance for the teacher.
-    Ensures empathy, strict LOPIVI anonymity compliance, and prevents interrogation fatigue.
+    Construeix l'orientació conversacional per al docent.
+    Garanteix empatia, compliment estricte d'anonimat i evita la fatiga per interrogatori.
     """
 
     def build(
@@ -17,13 +17,13 @@ class TeacherGuidanceBuilder:
     ) -> TeacherGuidance:
         empathy_statement = self._build_empathy_statement(intake)
         
-        # 1. Build avoid questions dynamically from the taxonomy config
+        # 1. Obtenir preguntes a evitar dinàmicament des de la configuració
         risk_category = intake.risk_category
         taxonomy_info = BRESOL_RISK_TAXONOMY.get(risk_category, BRESOL_RISK_TAXONOMY["general"])
         
         avoid_questions = list(taxonomy_info.get("avoid_questions", []))
 
-        # Add general anonymity fallbacks if not already present and mode is anonymous
+        # Afegir regles d'anonimat generals si no hi són presents
         if not intake.victim_identified or intake.reporting_mode == "anonymous":
             general_fallbacks = [
                 "Evita demanar el nom complet de la víctima directament.",
@@ -33,8 +33,8 @@ class TeacherGuidanceBuilder:
                 if q not in avoid_questions:
                     avoid_questions.append(q)
 
-        # 2. Build recommended questions
-        # Prioritize high importance missing parameters
+        # 2. Construir preguntes recomanades
+        # Prioritzar paràmetres faltants d'alta importància
         sorted_missing = sorted(
             report.missing_parameters,
             key=lambda x: 0 if x.importance == "high" else (1 if x.importance == "medium" else 2)
@@ -42,14 +42,14 @@ class TeacherGuidanceBuilder:
 
         raw_questions = [mp.question_context for mp in sorted_missing]
 
-        # 3. Apply dynamic question limits
+        # 3. Aplicar límits dinàmics de preguntes
         limit = 2  # Default
         
         if intake.requires_urgent_review:
-            # Urgent cases: 1-2 critical questions only (focus on safety)
+            # Casos urgents: només 1-2 preguntes crítiques (foc al risc i la seguretat)
             limit = 2
         elif report.minimum_information_score <= 3:
-            # Complex/poor info cases: we need more info, max 4
+            # Casos complexos o amb poca informació: calen més dades, màxim 4
             limit = 4
             
         recommended_questions = raw_questions[:limit]

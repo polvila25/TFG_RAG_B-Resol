@@ -50,7 +50,7 @@ def generate_embeddings(
     chunks: List[Dict[str, Any]],
     batch_size: int = 32,
 ) -> List[Dict[str, Any]]:
-    print(f"[INFO] Loading embedding model: {EMBEDDING_MODEL_NAME}")
+    print(f"[INFO] Carregant model d'embedding: {EMBEDDING_MODEL_NAME}")
     model = SentenceTransformer(EMBEDDING_MODEL_NAME)
 
     embedded_chunks: List[Dict[str, Any]] = []
@@ -60,7 +60,7 @@ def generate_embeddings(
 
     texts = [chunk["payload"]["embedding_text"] for chunk in chunks]
 
-    print(f"[INFO] Generating embeddings for {len(texts)} chunks...")
+    print(f"[INFO] Generant embeddings per a {len(texts)} fragments...")
 
     vectors = model.encode(
         texts,
@@ -90,12 +90,12 @@ def save_embedded_chunks(chunks: List[Dict[str, Any]], path: Path) -> None:
     with path.open("w", encoding="utf-8") as f:
         json.dump(chunks, f, ensure_ascii=False, indent=2)
 
-    print(f"[OK] Embedded chunks saved to: {path}")
+    print(f"[OK] Fragments amb embeddings desats a: {path}")
 
 
 def generate_and_save_embeddings() -> List[Dict[str, Any]]:
     chunks = load_chunks(CHUNKS_PATH)
-    print(f"[INFO] Loaded chunks: {len(chunks)}")
+    print(f"[INFO] Fragments carregats: {len(chunks)}")
 
     embedded_chunks = generate_embeddings(chunks)
 

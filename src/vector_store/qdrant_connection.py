@@ -12,17 +12,17 @@ from src.vector_store.config import (
 
 def get_qdrant_client() -> QdrantClient:
     """
-    Devuelve un cliente Qdrant.
+    Retorna un client Qdrant.
 
-    Modo local:
-        Guarda la base vectorial dentro del proyecto:
+    Mode local:
+        Desa la base vectorial dins del projecte:
         storage/qdrant/
 
-    Modo server:
-        Se conecta a Qdrant levantado con Docker o servidor.
+    Mode server:
+        Es connecta a Qdrant aixecat amb Docker o servidor.
         
-    Modo cloud:
-        Se conecta a Qdrant Cloud mediante URL y API Key.
+    Mode cloud:
+        Es connecta a Qdrant Cloud mitjançant URL i API Key.
     """
 
     if QDRANT_MODE == "local":
@@ -41,7 +41,7 @@ def get_qdrant_client() -> QdrantClient:
         
     if QDRANT_MODE == "cloud":
         if not QDRANT_URL or not QDRANT_API_KEY:
-            raise ValueError("QDRANT_URL y QDRANT_API_KEY deben estar definidos en .env para el modo cloud.")
+            raise ValueError("QDRANT_URL i QDRANT_API_KEY han d'estar definits a .env per al mode cloud.")
         return QdrantClient(
             url=QDRANT_URL,
             api_key=QDRANT_API_KEY,

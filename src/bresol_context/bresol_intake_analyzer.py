@@ -204,7 +204,7 @@ class BresolIntakeAnalyzer:
         return "unknown"
 
     def _fallback(self, user_query: str, reporting_mode: str, error: str) -> BresolIntakeAnalysis:
-        # Check simple urgency keywords to at least capture extreme risks
+        # Comprovar paraules clau d'urgència bàsiques per capturar riscos extrems
         lower_query = user_query.lower()
         is_urgent = any(word in lower_query for word in ["suïcidi", "matar", "violació", "abús sexual", "no vull viure"])
         

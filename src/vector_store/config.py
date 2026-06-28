@@ -16,7 +16,7 @@ EMBEDDED_CHUNKS_PATH = (
     / "all_chunks_embedded.json"
 )
 
-# Carpeta local donde Qdrant guardará la BD vectorial
+# Carpeta local on Qdrant desarà la BD vectorial
 QDRANT_LOCAL_PATH = PROJECT_ROOT / "storage" / "qdrant"
 
 # ============================================================
@@ -24,14 +24,14 @@ QDRANT_LOCAL_PATH = PROJECT_ROOT / "storage" / "qdrant"
 # ============================================================
 import os
 
-# Modo actual recomendado para desarrollo:
+# Mode actual recomanat per a desenvolupament:
 QDRANT_MODE = os.getenv("QDRANT_MODE", "local")
 
-# Futuro modo Docker/servidor:
+# Futur mode Docker/servidor:
 QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
 
-# Modo Cloud (Qdrant Cloud)
+# Mode Cloud (Qdrant Cloud)
 QDRANT_URL = os.getenv("QDRANT_URL")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 

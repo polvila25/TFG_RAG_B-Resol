@@ -98,14 +98,14 @@ class AdvancedRAGPipeline:
         if not chat_history:
             return user_query
 
-        # Filtrar solo mensajes que no sean errores y tomar los últimos 6 para no saturar
+        # Filtrar només missatges d'usuari/assistent i agafar els últims 6 per no saturar
         history_text = ""
         for msg in chat_history[-6:]:
             role = "Usuari" if msg["role"] == "user" else "Assistent"
             content = msg["content"]
             if role == "Assistent":
                 content = _clean_disclaimer(content)
-            # Limitar la longitud de los mensajes de la historia para mantener el contexto ligero
+            # Limitar la longitud dels missatges de la història per mantenir el context lleuger
             if len(content) > 300:
                 content = content[:300] + "..."
             history_text += f"{role}: {content}\n"
@@ -194,7 +194,7 @@ Pregunta independent en català:"""
             
         case_report = self.evaluator.evaluate(bresol_analysis)
         t_parallel_end = time.time() - t_parallel_start
-        print (f'Temps paral·lel: {t_parallel_end:.3f}s')
+        print(f"      - Temps paral·lel: {t_parallel_end:.3f}s")
         # Guardem els temps combinats per als logs
         t_intake = t_parallel_end
         t_query_analysis = 0.0
@@ -262,7 +262,7 @@ Pregunta independent en català:"""
             print("\n[4/6] Recuperació RAG Activa...")
             enriched = enrich_query(active_query, query_analysis, bresol_analysis)
             
-            # Simple routing based on query_type
+            # Enrutament simple basat en query_type
             if query_analysis.query_type == "legal_support":
                 final_chunks = self._retrieve_and_rerank(
                     enriched.search_query, active_query, "legal_support", bresol_analysis.risk_category, 10, 4)
@@ -281,7 +281,7 @@ Pregunta independent en català:"""
             print("\n[4/6] Recuperació RAG Omesa (Planificador).")
         t_rag = time.time() - t5
   
-        # Format chat history for generator context
+        # Formatar historial de xat per al context del generador
         history_context = ""
         if chat_history:
             history_context = "HISTORIAL DE LA CONVERSA ANTERIOR:\n"
@@ -290,13 +290,13 @@ Pregunta independent en català:"""
                 content = msg["content"]
                 if role == "Assistent":
                     content = _clean_disclaimer(content)
-                # Si es respuesta del asistente, removemos la metadata técnica para no saturar al LLM
+                # Si és resposta de l'assistent, eliminem la metadada tècnica per no saturar l'LLM
                 if "Veure anàlisi i fonts" in content:
                     content = content.split("Veure anàlisi i fonts")[0]
                 history_context += f"- {role}: {content}\n"
             history_context += "\nConsulta actual de l'usuari a respondre:\n"
 
-        # 6. LLM Generation
+        # 6. Generació amb LLM
         print("[5/6] Generant resposta amb Prompt Dinàmic...")
         t6 = time.time()
         dynamic_prompt = get_prompt(

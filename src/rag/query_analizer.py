@@ -7,22 +7,11 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 
 from src.rag.schemas import QueryAnalysis
-'''
-De la consulta inicial del docent, s'utilitza un LLM sencill per poder 
-identificar del cert que tipus d'informació s'està demanant i amb quina
-finalitat.
-
-Aquesta part del pipeline es troba abans de la fase de recuperació 
-amb RAG i serveix per orientar el sistema RAG per tal d'oferir el
-document més adequat i correcte.
-
-Es pasa el prompt a un LLM per poder obtenir el JSON amb la informació necessària.
-S'utilitza el GEMINI 2.5 FLASH LITE com a LLM per a aquesta tasca.
-
-Si falla el LLM, s'utilitza un fallback simple per tal de poder obtenir el JSON amb la informació necessària.
-Per fer-ho es realitza un anàlisi bàsic de paraules clau per tal de poder obtenir el JSON amb la informació necessària.
-
-'''
+"""
+Analitzador inicial de consultes mitjançant LLM.
+Identifica el tipus d'informació demanada per orientar la fase de recuperació documental (RAG).
+Inclou un mecanisme de fallback heurístic en cas d'error de l'LLM.
+"""
 
 ALLOWED_QUERY_TYPES = {
     "application",
@@ -262,7 +251,7 @@ class QueryAnalyzer:
         Normalitza i valida els camps retornats pel LLM que siguin correctes.
         Si el LLM no retorna un camp o retorna un camp invàlid, es substitueix pel fallback
         de seguretat.
-        Básicament es un validador. 
+        Bàsicament és un validador. 
         """
 
         query_type = self._safe_choice(
@@ -317,7 +306,7 @@ class QueryAnalyzer:
         if notes is not None and not isinstance(notes, str):
             notes = None
 
-        # Ajustes defensivos
+        # Ajustos defensius
         if query_type == "legal_support":
             retrieval_layer = "legal_support"
 
@@ -447,7 +436,7 @@ class QueryAnalyzer:
         requires_human_review = True
         urgency_level = "medium"
 
-        # Heurística para has_implicated_parties
+        # Heurística per a has_implicated_parties
         has_implicated_parties = False
         if reporting_mode == "identified":
             has_implicated_parties = True
@@ -456,14 +445,14 @@ class QueryAnalyzer:
             if any(term in query_lower for term in implicated_terms):
                 has_implicated_parties = True
             else:
-                # Detecta mayúsculas que no sean la primera palabra (indicio de nombre propio)
+                # Detecta majúscules que no siguin la primera paraula (indici de nom propi)
                 words = user_query.split()
                 for i, w in enumerate(words):
                     if i > 0 and w and w[0].isupper() and w.isalpha():
                         has_implicated_parties = True
                         break
 
-        # Heurística para detected_features (bàsica per fallback)
+        # Heurística per a detected_features (bàsica per fallback)
         detected_features = []
 
         enriched_query_hint = self._build_basic_enriched_hint(

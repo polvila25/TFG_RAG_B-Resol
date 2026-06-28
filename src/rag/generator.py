@@ -14,14 +14,14 @@ class LLMGenerator:
 
     def generate(self, variables: Dict[str, Any]) -> str:
         """
-        Generates the LLM response using the dynamically passed variables.
+        Genera la resposta de l'LLM utilitzant les variables passades dinàmicament.
         """
         response = self.chain.invoke(variables)
         return response
 
     def generate_stream(self, variables: Dict[str, Any]):
         """
-        Streams the LLM response. Returns a generator yielding strings.
+        Genera la resposta de l'LLM en streaming. Retorna un generador de cadenes de text.
         """
         for chunk in self.chain.stream(variables):
             if isinstance(chunk, str):

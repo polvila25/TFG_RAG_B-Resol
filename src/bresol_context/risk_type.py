@@ -1,14 +1,14 @@
 # src/bresol_context/risk_type.py
 
 """
-Taxonomía central b-resol para intake, clasificación inicial y detección
-de información faltante.
+Taxonomia central b-resol per a intake, classificació inicial i detecció
+d'informació faltant.
 
-Este fichero es la fuente única de verdad para:
+Aquest fitxer és l'única font de veritat per a:
 - BRESOL_RISK_TAXONOMY
 - BRESOL_PHASE_2_CRITERIA
 
-No crear otro fichero duplicado tipo bresol_taxonomy.py.
+No crear cap altre fitxer duplicat tipus bresol_taxonomy.py.
 """
 
 
@@ -627,8 +627,8 @@ BRESOL_PHASE_2_CRITERIA = {
 
 def get_risk_config(risk_category: str) -> dict:
     """
-    Devuelve la configuración de una categoría de riesgo.
-    Si la categoría no existe, devuelve la categoría general.
+    Retorna la configuració d'una categoria de risc.
+    Si la categoria no existeix, retorna la categoria general.
     """
     return BRESOL_RISK_TAXONOMY.get(
         risk_category,
@@ -638,6 +638,6 @@ def get_risk_config(risk_category: str) -> dict:
 
 def get_all_risk_categories() -> list[str]:
     """
-    Devuelve todas las categorías disponibles.
+    Retorna totes les categories disponibles.
     """
     return list(BRESOL_RISK_TAXONOMY.keys())

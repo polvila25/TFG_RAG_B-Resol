@@ -5,13 +5,13 @@ from src.rag.reranker import RerankedChunk
 
 class ContextBuilder:
     """
-    Construye contexto estructurado para el LLM.
+    Construeix context estructurat per a l'LLM.
 
-    Objetivos:
-    - Mantener trazabilidad.
-    - Incluir documento y página.
-    - Evitar pasar chunks sin fuente.
-    - Dar formato claro al contexto.
+    Objectius:
+    - Mantenir la traçabilitat.
+    - Incloure document i pàgina.
+    - Evitar passar fragments sense font.
+    - Donar format clar al context.
     """
 
     def __init__(

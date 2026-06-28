@@ -9,8 +9,8 @@ from src.rag.schemas import QueryAnalysis
 
 class ResponsePlanner:
     """
-    Deterministic router that outputs the final ResponsePlan.
-    Evaluates urgency, the minimum_information_score, and the query analysis intent.
+    Enrutador determinista que retorna el ResponsePlan final.
+    Avalua la urgència, la puntuació d'informació mínima i la intenció de la consulta.
     """
 
     def plan(
@@ -21,7 +21,7 @@ class ResponsePlanner:
         is_out_of_scope: bool = False,
     ) -> ResponsePlan:
 
-        # 1. CONTROL DE CONTEXTO (FUERA DE DOMINIO - PRIORIDAD 1)
+        # 1. CONTROL DE CONTEXT (FORA DE DOMINI - PRIORITAT 1)
         out_of_scope = is_out_of_scope or getattr(query_analysis, "is_out_of_scope", False)
         if out_of_scope:
             return ResponsePlan(
@@ -30,11 +30,11 @@ class ResponsePlanner:
                 rag_instructions="Consulta fora de domini. Rebutjar amb fermesa."
             )
 
-        # 2. RIESGO VITAL URGENTE (PRIORIDAD 2)
+        # 2. RISC VITAL URGENT (PRIORITAT 2)
         if intake.requires_urgent_review:
             return ResponsePlan(
                 response_type="urgent_protection",
-                should_run_documental_rag=True, # RAG executes to get immediate protection measures
+                should_run_documental_rag=True, # RAG s'executa per obtenir mesures de protecció immediates
                 urgent_actions=[
                     "1. Garantir la seguretat física i emocional immediata de l'alumne/a.",
                     "2. Comunicar immediatament a la direcció del centre.",
@@ -43,7 +43,7 @@ class ResponsePlanner:
                 rag_instructions="Prioritzar extremadament les mesures d'urgència i protecció física immediata sobre qualsevol altra qüestió."
             )
 
-        # 3. ALERTA ANÓNIMA (PRIORIDAD 3)
+        # 3. ALERTA ANÒNIMA (PRIORITAT 3)
         if intake.reporting_mode == "anonymous":
             score = report.minimum_information_score
             if score < 5:
@@ -59,10 +59,10 @@ class ResponsePlanner:
                     rag_instructions="Alerta explícitament anònima completa (score >= 5). Protocol d'actuació protegint la identitat de l'emissor."
                 )
 
-        # 4. ALERTA NO ANÓNIMA (PRIORIDAD 4)
+        # 4. ALERTA NO ANÒNIMA (PRIORITAT 4)
         score = report.minimum_information_score
 
-        # A) Capa de Ley
+        # A) Capa Legal
         if query_analysis.query_type == "legal_support":
             return ResponsePlan(
                 response_type="legal_support",
@@ -78,7 +78,7 @@ class ResponsePlanner:
                 rag_instructions="Combinar orientació pràctica d'aplicació amb fonament legal clar."
             )
 
-        # C) Capa de Protocolo
+        # C) Capa de Protocol
         else:
             if score <= 4:
                 return ResponsePlan(

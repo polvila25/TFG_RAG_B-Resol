@@ -8,13 +8,13 @@ from src.rag.prompt_builder import get_prompt
 from src.rag.generator import LLMGenerator
 
 '''
-Módulo orquestador principal del sistema RAG.
-Define la clase RAG, que coordina la carga, troceado, indexación, búsqueda y generación de respuestas.
-Contiene también la función run_app para pruebas o ejecución directa.
+Mòdul orquestrador principal del sistema RAG.
+Defineix la classe RAG, que coordina la càrrega, fragmentació, indexació, cerca i generació de respostes.
+Conté també la funció run_app per a proves.
 '''
 
 class RAG:
-    # Añadimos type hinting (str) para mayor rigor académico en el código
+
     def __init__(self, gemini_api_key: str, gemini_model: str = "gemini-1.5-flash"):
         self.vectorStore = VectorStore()
         self.pdfloader = PdfLoader()
@@ -22,24 +22,24 @@ class RAG:
         self.prompt = get_prompt()
         self.generator = LLMGenerator(gemini_api_key, gemini_model, self.prompt)
 
-    def run(self, filePath: str, query: str) -> str:
+    def run(self, file_path: str, query: str) -> str:
         """
         Ejecuta el pipeline RAG. Si los documentos ya están indexados, salta la lectura del PDF.
         """
-        # Comprobamos si el archivo de FAISS ya existe en el disco
+        # Comprovar si el fitxer de FAISS ja existeix
         if not os.path.exists("data/vector_store/index.faiss"):
-            print("[1/5] 📄 Leyendo el documento PDF por primera vez...")
-            docs = self.pdfloader.read_file(filePath)
+            print("[1/5] 📄 Llegint el document PDF per primera vegada...")
+            docs = self.pdfloader.read_file(file_path)
             
-            print("[2/5] ✂️  Fragmentando el texto (Chunking)...")
+            print("[2/5] ✂️  Fragmentant el text (Chunking)...")
             list_of_docs = self.chunker.chunk_docs(docs)
             
-            print(f"[3/5] 🧠 Indexando y GUARDANDO {len(list_of_docs)} fragmentos en disco...")
+            print(f"[3/5] 🧠 Indexant i DESANT {len(list_of_docs)} fragments al disc...")
             self.vectorStore.add_docs(list_of_docs)
         else:
-            print("[1-3/5] ⚡ Base de datos cargada desde disco. Saltando procesamiento del PDF.")
+            print("[1-3/5] ⚡ Base de dades carregada des del disc. Saltant processament del PDF.")
 
-        print("[4/5] 🔍 Buscando información legal relevante...")
+        print("[4/5] 🔍 Cercant informació legal rellevant...")
         results = self.vectorStore.search_docs(query, k=6)
         
         answer_context = "\n\n".join([
@@ -47,30 +47,27 @@ class RAG:
             for res in results
         ])
         
-        print("[5/5] 🤖 Generando la respuesta fundamentada con IA...")
+        print("[5/5] 🤖 Generant la resposta fonamentada amb IA...")
         return self.generator.generate(query, answer_context)
 
 def run_app():
     load_dotenv()
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     
-    # Actualizado a gemini-1.5-flash (es más rápido y mejor para RAG actual que gemini-pro)
     GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash") 
     
-    # Verificación de seguridad antes de arrancar
     if not GEMINI_API_KEY:
-        print("❌ ERROR: No se encontró la GEMINI_API_KEY. Revisa tu archivo .env")
+        print("❌ ERROR: No s'ha trobat la GEMINI_API_KEY. Revisa el teu fitxer .env")
         return
 
     rag = RAG(gemini_api_key=GEMINI_API_KEY, gemini_model=GEMINI_MODEL)
-    filePath = "data/raw/protocol-actuacio-davant-violencia.pdf"
+    file_path = "data/raw/protocol-actuacio-davant-violencia.pdf"
     
-    # Prueba enfocada al caso crítico de validación
     query = "Quines mesures d'urgència s'han de prendre si un alumne rep patades diàries i està aterrit?"
     
     try:
         print(f"\n💬 PREGUNTA DEL DOCENT: {query}\n")
-        response = rag.run(filePath, query)
+        response = rag.run(file_path, query)
         
         print("\n" + "="*50)
         print("=== 🎓 RESPOSTA DE L'ASSISTENT EDUGUARD ===")
@@ -79,9 +76,9 @@ def run_app():
         print("="*50 + "\n")
         
     except FileNotFoundError:
-        print(f"❌ ERROR: No se encuentra el archivo PDF en la ruta: {filePath}")
+        print(f"❌ ERROR: No s'ha trobat el fitxer PDF a la ruta: {file_path}")
     except Exception as e:
-        print(f"❌ Ocurrió un error inesperado al ejecutar el motor RAG: {e}")
+        print(f"❌ S'ha produït un error inesperat en executar el motor RAG: {e}")
 
 if __name__ == "__main__":
     run_app()

@@ -8,8 +8,8 @@ from src.bresol_context.risk_type import get_risk_config
 
 class CaseInformationEvaluator:
     """
-    Deterministically evaluates if the required information for a given risk category
-    is present. Computes a minimum information score (0-10) and tracks missing elements.
+    Avalua de forma determinista si la informació requerida per a una categoria
+    de risc està present. Calcula una puntuació (0-10) i els elements faltants.
     """
 
     def evaluate(self, intake: BresolIntakeAnalysis) -> CaseInformationReport:
@@ -18,13 +18,13 @@ class CaseInformationEvaluator:
 
         minimum_elements = taxonomy_info.get("minimum_elements", [])
         
-        # Determine missing vs completed
+        # Determinar elements completats i faltants
         completed_parameters = []
         missing_parameters = []
 
         llm_missing = [m.lower() for m in intake.missing_information]
         
-        # Pull question lists from the single source of truth in risk_type.py
+        # Obtenir llistes de preguntes des de risk_type.py
         missing_info_qs = taxonomy_info.get("missing_info_questions", [])
         safe_id_qs = taxonomy_info.get("safe_identification_questions", [])
 
@@ -34,23 +34,22 @@ class CaseInformationEvaluator:
         for idx, element in enumerate(minimum_elements):
             is_missing = False
             
-            # 1. Direct check from LLM-identified missing keys
+            # 1. Comprovació directa de les claus identificades per l'LLM
             if element in intake.missing_minimum_elements:
                 is_missing = True
-            # 2. Strict check for victim
+            # 2. Comprovació estricta de la víctima
             elif "victima" in element or "afectat" in element:
                 is_missing = not intake.victim_identified
             else:
-                # 3. Check against general free-text missing information list
+                # 3. Comprovació contra la llista general d'informació faltant
                 element_clean = element.replace("_", " ")
                 for missing_str in llm_missing:
                     if element_clean in missing_str or missing_str in element_clean:
                         is_missing = True
                         break
                 
-                # 4. Strict text-evidence fallback for ALL reporting modes.
-                # Queries under 20 words lack sufficient detail to prove
-                # intent, repetition, or power imbalance.
+                # 4. Comprovació estricta d'evidència textual. Les consultes 
+                # curtes manquen de detall suficient per provar intencionalitat.
                 if word_count < 20:
                     if element == "repeticio_temporal" and not any(w in query_lower for w in ["sempre", "repetit", "cada dia", "fa temps", "mesos", "setmanes", "diari", "habitual", "continuament", "sovint", "constantment"]):
                         is_missing = True
@@ -62,13 +61,13 @@ class CaseInformationEvaluator:
                         is_missing = True
 
             if is_missing:
-                # Dynamically retrieve matching questions from the config
+                # Recuperar dinàmicament les preguntes coincidents de la configuració
                 q_context = "Ens podries orientar amb més detalls sobre aquesta situació?"
                 if "victima" in element or "afectat" in element:
                     if safe_id_qs:
                         q_context = safe_id_qs[0]
                 else:
-                    # Distribute general missing questions matching index or fallback
+                    # Distribuir preguntes generals coincidents o per defecte
                     q_idx = idx % len(missing_info_qs) if missing_info_qs else 0
                     if missing_info_qs:
                         q_context = missing_info_qs[q_idx]
@@ -84,7 +83,7 @@ class CaseInformationEvaluator:
             else:
                 completed_parameters.append(element)
 
-        # Force safe_identification if victim is not identified
+        # Forçar identificació segura si la víctima no està identificada
         has_safe_id = any(mp.parameter_name == "safe_identification" or "victima" in mp.parameter_name for mp in missing_parameters)
         if not intake.victim_identified and not has_safe_id:
             q_context = safe_id_qs[0] if safe_id_qs else "Ens podries orientar sobre quin curs o edat aproximada té l'alumne/a?"
@@ -97,7 +96,7 @@ class CaseInformationEvaluator:
                 )
             )
 
-        # Calculate Minimum Information Score (0 - 10)
+        # Calcular Puntuació Mínima d'Informació (0 - 10)
         score = self._calculate_score(
             intake, 
             completed_parameters=completed_parameters, 
@@ -145,7 +144,7 @@ class CaseInformationEvaluator:
         if intake.victim_identified:
             score += 0.5
             
-        # 3b. Agressor identificat (0.5 punts, NOU)
+        # 3b. Agressor identificat (0.5 punts)
         if intake.aggressor_identified:
             score += 0.5
             

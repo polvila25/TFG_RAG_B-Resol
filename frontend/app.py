@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-# Añadir la raíz del proyecto al sys.path para poder importar 'src'
+# Afegir l'arrel del projecte al sys.path per poder importar 'src'
 project_root = str(Path(__file__).resolve().parents[1])
 if project_root not in sys.path:
     sys.path.append(project_root)
@@ -34,15 +34,15 @@ PROTOCOL_PDF_MAP = {
     "consum_substancies": "CIRCUIT-SECUNDARIA-DROGUES-DEFINITIU.pdf"
 }
 
-# Configuración de la página (opcional pero recomendado)
+# Configuració de la pàgina (opcional però recomanat)
 st.set_page_config(page_title="Assistent B-Resol", page_icon="🛡️")
 
-#crear la interfice
+# Crear la interfície
 
-#dos columnes per logo i titol
+# Dues columnes per logo i títol
 col1, col2 = st.columns([1,5])
 with col1:
-    # Usamos try/except por si la imagen no existe en ese path
+    # Usem try/except per si la imatge no existeix en aquest path
     try:
         st.image('assets/logo_b-resol.png', width=80)
     except:
@@ -55,16 +55,16 @@ with col2:
 if "rag_model" not in st.session_state:
     with st.spinner("Carregant models de IA (Això pot trigar uns segons la primera vegada)..."):
         GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-        # Usamos gemini-1.5-flash por defecto ya que es más rápido y mejor para RAG
+        # Usem gemini-1.5-flash per defecte ja que és més ràpid i millor per a RAG
         GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash") 
         st.session_state["rag_model"] = AdvancedRAGPipeline(gemini_api_key=GEMINI_API_KEY, gemini_model=GEMINI_MODEL)
         st.session_state["nofc_model"] = NOFCGenerator(gemini_api_key=GEMINI_API_KEY, gemini_model=GEMINI_MODEL)
 
-# Selector de modo de informe en la barra lateral
+# Selector de mode d'informe a la barra lateral
 with st.sidebar:
     st.header("🗂️ Gestió d'Alertes")
     
-    # Manejo de chats
+    # Gestió de xats
     if "chats" not in st.session_state:
         first_id = str(uuid.uuid4())
         st.session_state.chats = {
@@ -244,12 +244,12 @@ else:
     # Avís explícit per alertes
     st.info("⚠️ **Avís:** Per garantir la qualitat de l'anàlisi, aquesta conversa s'ha de centrar exclusivament en aquesta alerta. Si vols parlar d'un altre cas, si us plau, obre o selecciona un altre xat al menú lateral.")
 
-# Mostrar el historial del chat
+# Mostrar l'historial del xat
 for i, message in enumerate(current_chat["messages"]):
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
         
-        # Mostrar botón de descarga de PDF si existe
+        # Mostrar botó de descàrrega de PDF si existeix
         if message.get("pdf_filename"):
             pdf_path = os.path.join("assets", "protocols", message["pdf_filename"])
             if os.path.exists(pdf_path):
@@ -481,7 +481,7 @@ for i, message in enumerate(current_chat["messages"]):
                             st.success("Valoració enviada correctament. Gràcies per ajudar-nos a millorar!")
                             st.rerun()
 
-# Input de usuario
+# Input d'usuari
 if prompt := st.chat_input("Fes la teva consulta sobre els protocols..."):
     current_chat["messages"].append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -506,7 +506,7 @@ if prompt := st.chat_input("Fes la teva consulta sobre els protocols..."):
                 else:
                     rag: AdvancedRAGPipeline = st.session_state["rag_model"]
                     
-                    # Llamamos a run() que ara retorna el resultat final sencer
+                    # Cridem a run() que ara retorna el resultat final sencer
                     result = rag.run(
                         user_query=prompt, 
                         reporting_mode=reporting_mode_selected, 
@@ -515,10 +515,10 @@ if prompt := st.chat_input("Fes la teva consulta sobre els protocols..."):
                     )
                     response_text = result["answer"]
                     
-                    # Mostramos la respuesta generada
+                    # Mostrem la resposta generada
                     st.markdown(response_text)
                     
-                    # Crear metadatos para guardar en el historial
+                    # Crear metadades per guardar a l'historial
                     reporting_mode_map = {
                         "anonymous": "Anònima 👥",
                         "identified": "Identificada 👤",
@@ -547,11 +547,11 @@ if prompt := st.chat_input("Fes la teva consulta sobre els protocols..."):
                         page = f" (Pàg. {chunk.source_page})" if chunk.source_page else ""
                         metadata_md += f"{i}. **{title}** - {source}{page} [Score: {chunk.score:.2f}]\n"
                     
-                    # Mostrar el expander en el mensaje actual
+                    # Mostrar l'expander en el missatge actual
                     with st.expander("👁️ Veure anàlisi i fonts recuperades"):
                         st.markdown(metadata_md)
                     
-                    # Guardar el mensaje junto con sus metadatos en el historial
+                    # Guardar el missatge juntament amb les seves metadades a l'historial
                     risk_category = result['bresol_intake'].risk_category
                     pdf_filename = PROTOCOL_PDF_MAP.get(risk_category)
                     
@@ -575,6 +575,6 @@ if prompt := st.chat_input("Fes la teva consulta sobre els protocols..."):
             except Exception as e:
                 response_text = f"❌ Error en processar la consulta: {e}"
                 import traceback
-                traceback.print_exc() # Imprime en la consola para facilitar el debug
+                traceback.print_exc() # Imprimeix a la consola per facilitar el debug
                 st.error(response_text)
                 current_chat["messages"].append({"role": "assistant", "content": response_text})

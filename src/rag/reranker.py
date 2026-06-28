@@ -25,13 +25,13 @@ class RerankedChunk(RetrievedChunk):
 
 class CrossEncoderReranker:
     """
-    Reranker basado en CrossEncoder.
+    Reranker basat en CrossEncoder.
 
-    Importante:
-    - Debe instanciarse una sola vez.
-    - No debe cargarse en cada query.
-    - Recibe top_k candidatos de Qdrant.
-    - Devuelve top_n chunks finales.
+    Important:
+    - S'ha d'instanciar una sola vegada.
+    - No s'ha de carregar a cada query.
+    - Rep top_k candidats de Qdrant.
+    - Retorna top_n chunks finals.
     """
 
     def __init__(
@@ -47,8 +47,8 @@ class CrossEncoderReranker:
         self.model = CrossEncoder(model_name)
 
         end = time.perf_counter()
-        print(f"[RERANKER] Model loaded: {model_name}")
-        print(f"[RERANKER] Load time: {end - start:.3f}s")
+        print(f"[RERANKER] Model carregat: {model_name}")
+        print(f"[RERANKER] Temps de càrrega: {end - start:.3f}s")
 
     def _truncate_text(self, text: str) -> str:
         text = text.strip()
@@ -83,9 +83,9 @@ class CrossEncoderReranker:
             for chunk in valid_chunks
         ]
 
-        print(f"[RERANKER] Candidates: {len(valid_chunks)}")
+        print(f"[RERANKER] Candidats: {len(valid_chunks)}")
         print(f"[RERANKER] Top_n: {top_n}")
-        print(f"[RERANKER] Max chars per chunk: {self.max_chars}")
+        print(f"[RERANKER] Màxim caràcters per chunk: {self.max_chars}")
 
         scores = self.model.predict(
             pairs,
@@ -107,6 +107,6 @@ class CrossEncoderReranker:
         )
 
         end = time.perf_counter()
-        print(f"[RERANKER] Inference time: {end - start:.3f}s")
+        print(f"[RERANKER] Temps d'inferència: {end - start:.3f}s")
 
         return reranked_chunks[:top_n]
