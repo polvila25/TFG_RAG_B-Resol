@@ -23,9 +23,10 @@ class QueryEnricher:
     ) -> EnrichedQuery:
         expansion_terms = []
 
-        expansion_terms.extend(
-            self._terms_for_risk_category(analysis.risk_category)
-        )
+        if bresol_intake:
+            expansion_terms.extend(
+                self._terms_for_risk_category(bresol_intake.risk_category)
+            )
 
         expansion_terms.extend(
             self._terms_for_query_type(analysis.query_type)
@@ -53,7 +54,7 @@ class QueryEnricher:
 
         search_query = (
             f"{original_query}\n"
-            f"Categoria de risc probable: {analysis.risk_category}.\n"
+            f"Categoria de risc probable: {bresol_intake.risk_category if bresol_intake else 'Desconegut'}.\n"
             f"Tipus de consulta: {analysis.query_type}.\n"
             f"Capa documental prioritària: {analysis.retrieval_layer}.\n"
         )

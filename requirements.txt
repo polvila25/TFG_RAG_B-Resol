@@ -15,6 +15,23 @@ sentence-transformers>=3.0.0
 # Bases de datos vectoriales
 faiss-cpu>=1.8.0
 qdrant-client>=1.10.0
+# Dependencias para el proyecto TFG RAG B-Resol
+
+# Procesamiento de documentos y LangChain
+PyMuPDF>=1.24.0
+langchain-text-splitters>=0.2.0
+langchain-core>=0.2.0
+langchain-community>=0.2.0
+
+# Modelos y Embeddings
+langchain-huggingface>=0.1.0
+langchain-google-genai>=1.0.8
+google-generativeai>=0.5.4
+sentence-transformers>=3.0.0
+
+# Bases de datos vectoriales
+faiss-cpu>=1.8.0
+qdrant-client>=1.10.0
 langchain-qdrant>=0.1.0
 
 # Utilidades
@@ -24,3 +41,9 @@ streamlit>=1.38.0
 # Google Sheets Integration
 gspread>=6.0.0
 google-auth>=2.0.0
+
+# Anonymization NLP
+spacy>=3.7.0
+
+# PDF Generation
+reportlab>=4.1.0

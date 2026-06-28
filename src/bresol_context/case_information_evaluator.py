@@ -153,7 +153,7 @@ class CaseInformationEvaluator:
         query_lower = intake.original_query.lower()
         
         # Bonus Temporal (0.25 punts)
-        temporal_keywords = ["ahir", "avui", "demà", "dema", "dies", "setmanes", "mesos", "sempre", "repetit", "vegades", "curs", "dilluns", "dimarts", "dimecres", "dijous", "divendres", "hora", "mati", "tarda", "pati"]
+        temporal_keywords = ["ahir", "avui", "demà", "dema", "dies", "setmanes", "mesos", "sempre", "repetit", "vegades", "curs", "dilluns", "dimarts", "dimecres", "dijous", "divendres", "hora", "mati", "tarda"]
         print(f'Elements temporals extrets: {intake.temporal_context_elements}')
         
         if intake.temporal_context_elements:
@@ -176,9 +176,9 @@ class CaseInformationEvaluator:
         # 6. Penalització per consultes curtes (menys de 20 paraules)
         words = intake.original_query.split()
         if len(words) < 20:
-            # Penalització més agressiva: a menys paraules, major penalització
-            # 5 paraules = -3.0, 10 paraules = -1.5, 19 paraules = -0.15
-            penalty = 3.0 * (20 - len(words)) / 20
+            # Penalització més suau: a menys paraules, major penalització (màxim -1.5)
+            # 5 paraules = -1.12, 10 paraules = -0.75, 19 paraules = -0.075
+            penalty = 1.5 * (20 - len(words)) / 20
             score -= penalty
             
         # Assegurar que la puntuació final estigui entre 0.0 i 10.0

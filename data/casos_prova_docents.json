@@ -1,0 +1,212 @@
+[
+  {
+    "consulta": "La Maria de 4t d'ESO porta dies plorant als passadissos i avui m'ha dit que ja no vol viure més, que tot se li fa massa gran i que ha pensat en prendre's pastilles per no despertar-se.",
+    "categoria_de_riesgo": "conducta_suicida",
+    "prioridad": "alta",
+    "tipo": "identificado",
+    "metadatos": {
+      "nom": "Maria",
+      "curs": "4t d'ESO",
+      "rol": "víctima"
+    }
+  },
+  {
+    "consulta": "He vist a les dutxes després d'educació física que en Pol té marques de talls verticals als avantbraços. Ha intentat tapar-s'ho ràpidament amb la dessuadora, però era molt evident.",
+    "categoria_de_riesgo": "autolesions",
+    "prioridad": "alta",
+    "tipo": "identificado",
+    "metadatos": {
+      "nom": "Pol",
+      "curs": "No especificat",
+      "rol": "víctima"
+    }
+  },
+  {
+    "consulta": "Crec que hi ha una alumna del meu grup que està patint. Es passa l'hora del pati sola al lavabo, i l'altre dia la vaig sentir vomitar després de dinar. Està perdent molt de pes darrerament.",
+    "categoria_de_riesgo": "tca",
+    "prioridad": "alta",
+    "tipo": "anonimo"
+  },
+  {
+    "consulta": "Ahir a la tarda, en sortir de l'institut, un grup d'alumnes més grans va rodejar a en Marc de 1r d'ESO, el van tirar a terra i li van donar cops de peu mentre li deien que era un inútil. És el tercer cop que passa aquest mes.",
+    "categoria_de_riesgo": "assetjament_escolar",
+    "prioridad": "alta",
+    "tipo": "identificado",
+    "metadatos": {
+      "nom": "Marc",
+      "curs": "1r d'ESO",
+      "rol": "víctima"
+    }
+  },
+  {
+    "consulta": "M'han arribat rumors de que estan circulant unes fotos molt compromeses de la Laia per un grup de WhatsApp de 3r d'ESO. Sembla que estan fent mems per humiliar-la.",
+    "categoria_de_riesgo": "ciberassetjament",
+    "prioridad": "alta",
+    "tipo": "identificado",
+    "metadatos": {
+      "nom": "Laia",
+      "curs": "3r d'ESO",
+      "rol": "víctima"
+    }
+  },
+  {
+    "consulta": "La mestra de plàstica m'ha avisat que la nena nova de P5 porta morats a l'esquena i a la cara, i quan li ha preguntat què li ha passat s'ha posat molt nerviosa i no ha volgut parlar de casa seva.",
+    "categoria_de_riesgo": "maltractament_infantil",
+    "prioridad": "alta",
+    "tipo": "anonimo"
+  },
+  {
+    "consulta": "Al vestuari masculí hi ha uns quants nois que porten tota la setmana fent bromes de mal gust sobre la condició sexual d'un company, dient-li 'marica' i imitant-lo per riure's d'ell.",
+    "categoria_de_riesgo": "conductes_odi_discriminacio",
+    "prioridad": "mitjana",
+    "tipo": "anonimo"
+  },
+  {
+    "consulta": "El xicot de la Sara de 1r de Batxillerat la va agafar fort del braç al pati perquè ella estava parlant amb un altre noi, i li va dir que com ho tornés a fer li trencaria el mòbil. Ella plorava i li demanava perdó.",
+    "categoria_de_riesgo": "violencies_masclistes",
+    "prioridad": "alta",
+    "tipo": "identificado",
+    "metadatos": {
+      "nom": "Sara",
+      "curs": "1r de Batxillerat",
+      "rol": "víctima"
+    }
+  },
+  {
+    "consulta": "Acabo de veure un noi de cicles formatius passant unes bossetes petites amb una substància blanca a uns alumnes de 4t d'ESO a prop de la pista de bàsquet.",
+    "categoria_de_riesgo": "consum_substancies",
+    "prioridad": "alta",
+    "tipo": "anonimo"
+  },
+  {
+    "consulta": "Dues alumnes s'han insultat fortament a l'aula durant el treball en grup i una d'elles ha tirat els fulls a terra de la ràbia. S'han enfadat molt però ho hem aturat de seguida.",
+    "categoria_de_riesgo": "conflicte_convivencia",
+    "prioridad": "baixa",
+    "tipo": "anonimo"
+  },
+  {
+    "consulta": "Hi ha un grup d'alumnes que sistemàticament trenca les normes de classe, interrompent el professor a crits i negant-se a fer cap activitat durant tres dies seguits.",
+    "categoria_de_riesgo": "falta_greument_perjudicial",
+    "prioridad": "mitjana",
+    "tipo": "anonimo"
+  },
+  {
+    "consulta": "Vull saber quin article de la LOPIVI determina el rol del coordinador de convivència als centres educatius.",
+    "categoria_de_riesgo": "general",
+    "prioridad": "baixa",
+    "tipo": "identificado",
+    "metadatos": {
+      "nom": "Equip Directiu",
+      "curs": "No aplicable",
+      "rol": "consultor"
+    }
+  },
+  {
+    "consulta": "Com puc configurar el router del centre per bloquejar l'accés a pàgines no desitjades des dels ordinadors dels alumnes?",
+    "categoria_de_riesgo": "out_of_scope",
+    "prioridad": "baixa",
+    "tipo": "anonimo"
+  },
+  {
+    "consulta": "Una alumna m'ha explicat que el seu padrastre entra a la seva habitació a les nits quan la seva mare no hi és i li fa tocaments que a ella no li agraden. Està molt espantada.",
+    "categoria_de_riesgo": "violencia_sexual",
+    "prioridad": "alta",
+    "tipo": "anonimo"
+  },
+  {
+    "consulta": "En Joan arriba cada dia sense esmorzar, amb la roba bruta des de fa setmanes, i avui m'ha confessat que a casa seva no tenen llum i ningú li fa cas perquè els seus pares mai hi són.",
+    "categoria_de_riesgo": "maltractament_infantil",
+    "prioridad": "alta",
+    "tipo": "identificado",
+    "metadatos": {
+      "nom": "Joan",
+      "curs": "No especificat",
+      "rol": "víctima"
+    }
+  },
+  {
+    "consulta": "Cada vegada que la Fàtima intervé a classe, els del fons comencen a imitar el seu accent i a riure's dient que se'n torni al seu país.",
+    "categoria_de_riesgo": "conductes_odi_discriminacio",
+    "prioridad": "alta",
+    "tipo": "identificado",
+    "metadatos": {
+      "nom": "Fàtima",
+      "curs": "No especificat",
+      "rol": "víctima"
+    }
+  },
+  {
+    "consulta": "M'agradaria saber on puc trobar les actes oficials per obrir un expedient disciplinari per faltes d'assistència repetides.",
+    "categoria_de_riesgo": "general",
+    "prioridad": "baixa",
+    "tipo": "anonimo"
+  },
+  {
+    "consulta": "Durant l'excursió d'ahir, vaig enxampar tres nois de 3r d'ESO fumant porros a la zona del bosc, darrere dels lavabos públics.",
+    "categoria_de_riesgo": "consum_substancies",
+    "prioridad": "mitjana",
+    "tipo": "identificado",
+    "metadatos": {
+      "nom": "No especificat",
+      "curs": "3r d'ESO",
+      "rol": "infractors"
+    }
+  },
+  {
+    "consulta": "Quina és la distància de la Terra a la Lluna?",
+    "categoria_de_riesgo": "out_of_scope",
+    "prioridad": "baixa",
+    "tipo": "anonimo"
+  },
+  {
+    "consulta": "Fa temps que noto que el grup de noies ignora sistemàticament a la Carla. No la conviden a cap aniversari i quan ella s'acosta, totes marxen fent rialletes.",
+    "categoria_de_riesgo": "assetjament_escolar",
+    "prioridad": "mitjana",
+    "tipo": "identificado",
+    "metadatos": {
+      "nom": "Carla",
+      "curs": "No especificat",
+      "rol": "víctima"
+    }
+  },
+  {
+    "consulta": "Em preocupa l'Albert. A l'hora del menjador amaga el menjar als tovallons per no haver-s'ho d'empassar, i demana constantment anar al lavabo just després.",
+    "categoria_de_riesgo": "tca",
+    "prioridad": "mitjana",
+    "tipo": "identificado",
+    "metadatos": {
+      "nom": "Albert",
+      "curs": "No especificat",
+      "rol": "víctima"
+    }
+  },
+  {
+    "consulta": "Han penjat al taulell de l'institut un cartell difamant la coordinadora on l'insulten greument amb paraulotes. Encara no sabem qui ho ha fet.",
+    "categoria_de_riesgo": "falta_greument_perjudicial",
+    "prioridad": "mitjana",
+    "tipo": "anonimo"
+  },
+  {
+    "consulta": "Al grup de WhatsApp de la classe hi ha hagut una forta discussió per culpa d'un treball de grup. Dos alumnes s'han dit de tot i estan molt enfadats.",
+    "categoria_de_riesgo": "conflicte_convivencia",
+    "prioridad": "baixa",
+    "tipo": "anonimo"
+  },
+  {
+    "consulta": "Al vestidor, les noies de 2n s'han començat a burlar del pes de la nova companya. Han començat a enviar stickers d'ella modificats al grup de la classe.",
+    "categoria_de_riesgo": "ciberassetjament",
+    "prioridad": "alta",
+    "tipo": "anonimo"
+  },
+  {
+    "consulta": "Una mare ha trucat per dir que la seva filla no vindrà avui a classe perquè un noi de 4t l'està obligant a enviar-li fotos íntimes i diu que si no ho fa publicarà unes que ja té.",
+    "categoria_de_riesgo": "violencia_sexual",
+    "prioridad": "alta",
+    "tipo": "identificado",
+    "metadatos": {
+      "nom": "Filla",
+      "curs": "No especificat",
+      "rol": "víctima"
+    }
+  }
+]

@@ -15,6 +15,7 @@ from src.rag.reranker import CrossEncoderReranker, RerankedChunk
 from src.rag.context_builder import ContextBuilder
 from src.rag.prompt_builder import get_prompt
 from src.rag.generator import LLMGenerator
+from src.privacy.anonymizer import Anonymizer
 
 
 def _format_list(items: List[str]) -> str:
@@ -144,17 +145,31 @@ Pregunta independent en català:"""
         user_query: str, 
         reporting_mode: str = "identified", 
         student_metadata: dict = None,
-        chat_history: List[Dict[str, str]] = None
+        chat_history: List[Dict[str, str]] = None,
+        skip_generation: bool = False
     ) -> Dict[str, Any]:
         print("="*60)
         print("INICIANT PIPELINE RAG + TRIAJE")
-        print("="*60)
+        
+        # 0. ANONIMITZACIÓ RGPD (LOPIVI)
+        print("[0/6] Anonimitzant dades sensibles (RGPD)...")
+        print(f"      - Query rebuda: {user_query}")
+        anonymizer = Anonymizer()
+        anonymized_query = anonymizer.anonymize(user_query)
+        if anonymized_query != user_query:
+            print(f"      - Dades personals detectades i anonimitzades.")
+            print(f"      - Query anonimitzada: {anonymized_query}")
+        else:
+            print(f"      - Cap dada personal detectada.")
+        
+        # Anonimitzar també l'historial de conversa (RGPD complet)
+        anonymized_history = anonymizer.anonymize_chat_history(chat_history)
         
         t_total_start = time.time()
         
-        # 0. Condensar consulta si hi ha historial de conversa
+        # 1. Condensar consulta si hi ha historial de conversa
         t0 = time.time()
-        active_query = self._condense_query(user_query, chat_history)
+        active_query = self._condense_query(anonymized_query, anonymized_history)
         t_condense = time.time() - t0
         
         # 1 i 2. Bresol Intake & Evaluation + Query Intent Analysis (EN PARAL·LEL)
@@ -173,6 +188,10 @@ Pregunta independent en català:"""
             bresol_analysis = future_intake.result()
             query_analysis = future_query.result()
             
+            # Si l'IntakeAnalyzer detecta que està fora de context, ajustem la categoria
+            if bresol_analysis.is_out_of_scope:
+                bresol_analysis.risk_category = "out_of_scope"
+            
         case_report = self.evaluator.evaluate(bresol_analysis)
         t_parallel_end = time.time() - t_parallel_start
         print (f'Temps paral·lel: {t_parallel_end:.3f}s')
@@ -190,7 +209,7 @@ Pregunta independent en català:"""
             bresol_analysis,
             case_report,
             query_analysis,
-            is_out_of_scope=query_analysis.is_out_of_scope
+            is_out_of_scope=bresol_analysis.is_out_of_scope
         )
         t_planning = time.time() - t3
         print(f"      - Tipus Resposta: {response_plan.response_type} | RAG Actiu: {response_plan.should_run_documental_rag} | Temps planning: {t_planning:.3f}s")
@@ -205,6 +224,39 @@ Pregunta independent en català:"""
         context = "No s'ha realitzat cerca documental per falta d'informació mínima."
         enriched = None
         
+        if skip_generation:
+            print(f"      [4/6 i 5/6] Generació Omesa (mode avaluació ràpida).")
+            answer = "Generació omesa."
+            final_chunks = []
+            context = ""
+            t_rag = 0.0
+            t_generation = 0.0
+            t_total = time.time() - t_total_start
+            
+            print(f"\n--- DESGLOSSAMENT DE TEMPS DEL PIPELINE ---")
+            print(f"0. Condensar consulta (historial): {t_condense:.3f}s")
+            print(f"1. Bresol Intake & Evaluation:     {t_intake:.3f}s")
+            print(f"2. Query Analyzer (intenció):       {t_query_analysis:.3f}s")
+            print(f"3. Response Planning (routing):    {t_planning:.3f}s")
+            print(f"4. Guidance Builder:               {t_guidance:.3f}s")
+            print(f"5. Document Retrieval (RAG):       {t_rag:.3f}s")
+            print(f"6. LLM Generation:                 {t_generation:.3f}s")
+            print(f"-------------------------------------------")
+            print(f"PIPELINE FINALITZAT en {t_total:.3f}s")
+            print("="*60)
+            
+            return {
+                "answer": answer,
+                "analysis": query_analysis,
+                "bresol_intake": bresol_analysis,
+                "case_report": case_report,
+                "teacher_guidance": teacher_guidance,
+                "response_plan": response_plan,
+                "enriched_query": enriched,
+                "chunks": final_chunks,
+                "context": context,
+            }
+        
         t5 = time.time()
         if response_plan.should_run_documental_rag:
             print("\n[4/6] Recuperació RAG Activa...")
@@ -213,16 +265,16 @@ Pregunta independent en català:"""
             # Simple routing based on query_type
             if query_analysis.query_type == "legal_support":
                 final_chunks = self._retrieve_and_rerank(
-                    enriched.search_query, active_query, "legal_support", query_analysis.risk_category, 10, 4)
+                    enriched.search_query, active_query, "legal_support", bresol_analysis.risk_category, 10, 4)
             elif query_analysis.query_type == "mixed":
                 app_chunks = self._retrieve_and_rerank(
-                    enriched.search_query, active_query, "application", query_analysis.risk_category, 12, 4)
+                    enriched.search_query, active_query, "application", bresol_analysis.risk_category, 12, 4)
                 leg_chunks = self._retrieve_and_rerank(
-                    enriched.search_query, active_query, "legal_support", query_analysis.risk_category, 8, 2)
+                    enriched.search_query, active_query, "legal_support", bresol_analysis.risk_category, 8, 2)
                 final_chunks = app_chunks + leg_chunks
             else:
                 final_chunks = self._retrieve_and_rerank(
-                    enriched.search_query, active_query, "application", query_analysis.risk_category, 15, 5)
+                    enriched.search_query, active_query, "application", bresol_analysis.risk_category, 15, 5)
             
             context = self.context_builder.build(final_chunks)
         else:
@@ -253,14 +305,14 @@ Pregunta independent en català:"""
             reporting_mode=bresol_analysis.reporting_mode,
             info_score=case_report.minimum_information_score,
             query_type=query_analysis.query_type,
-            is_out_of_scope=query_analysis.is_out_of_scope,
+            is_out_of_scope=bresol_analysis.is_out_of_scope,
             requires_urgent_review=bresol_analysis.requires_urgent_review,
             student_metadata=student_metadata,
         )
         generator = LLMGenerator(self.gemini_api_key, self.gemini_model, dynamic_prompt)
         
         variables = {
-            "user_query": f"{history_context}{user_query}",
+            "user_query": f"{history_context}{anonymized_query}",
             "answer_context": context,
             "query_type": query_analysis.query_type,
             "risk_category": bresol_analysis.risk_category,
@@ -276,7 +328,7 @@ Pregunta independent en català:"""
             "reporting_mode": bresol_analysis.reporting_mode,
             "victim_identified": "Sí" if bresol_analysis.victim_identified else "No",
             "identification_status": "Anònim" if bresol_analysis.reporting_mode == "anonymous" else ("Identificat" if bresol_analysis.reporting_mode == "identified" else "Desconegut"),
-            "urgency_level": query_analysis.urgency_level,
+            "urgency_level": bresol_analysis.urgency_level,
             "has_implicated_parties": "Sí" if query_analysis.has_implicated_parties else "No",
             "detected_features": ", ".join(query_analysis.detected_features) if query_analysis.detected_features else "Cap característica específica detectada.",
         }
@@ -288,6 +340,11 @@ Pregunta independent en català:"""
         }
         
         answer = generator.generate(filtered_variables)
+        
+        # Des-anonimització final de la resposta per mostrar-la al docent
+        if reporting_mode == "identified":
+            answer = anonymizer.deanonymize(answer)
+            
         t_generation = time.time() - t6
         
         t_total = time.time() - t_total_start

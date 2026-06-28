@@ -67,6 +67,7 @@ class QdrantRetriever:
         jurisdiction: Optional[str] = "Catalunya",
     ) -> Optional[models.Filter]:
         must_conditions: List[models.Condition] = []
+        should_conditions: List[models.Condition] = []
 
         if retrieval_layer and retrieval_layer != "unknown":
             must_conditions.append(
@@ -77,7 +78,7 @@ class QdrantRetriever:
             )
 
         if risk_category and risk_category != "unknown":
-            must_conditions.append(
+            should_conditions.append(
                 models.FieldCondition(
                     key="risk_category",
                     match=models.MatchValue(value=risk_category),
@@ -108,10 +109,13 @@ class QdrantRetriever:
                 )
             )
 
-        if not must_conditions:
+        if not must_conditions and not should_conditions:
             return None
 
-        return models.Filter(must=must_conditions)
+        return models.Filter(
+            must=must_conditions if must_conditions else None,
+            should=should_conditions if should_conditions else None,
+        )
 
     def retrieve(
         self,

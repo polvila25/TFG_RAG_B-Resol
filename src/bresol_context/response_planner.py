@@ -86,15 +86,15 @@ class ResponsePlanner:
                     should_run_documental_rag=True,
                     rag_instructions="La informació és insuficient (score <= 4). Executar RAG per a orientació preliminar preventiva."
                 )
-            elif 4 < score < 7:
+            elif 4 < score < 8:
                 return ResponsePlan(
                     response_type="protocol_with_missing_info",
                     should_run_documental_rag=True,
-                    rag_instructions="Ambigüitat parcial (4 < score < 7). Executar RAG i incloure guia d'informació restant a confirmar."
+                    rag_instructions="Ambigüitat parcial (4 < score < 8). Executar RAG i incloure guia d'informació restant a confirmar."
                 )
-            else: # score >= 7
+            else: # score >= 8
                 return ResponsePlan(
                     response_type="protocol_response",
                     should_run_documental_rag=True,
-                    rag_instructions="Cas complet (score >= 7). Executar RAG i retornar el protocol de manera directa, neta i executiva."
+                    rag_instructions="Cas complet (score >= 8). Executar RAG i retornar el protocol de manera directa, neta i executiva."
                 )

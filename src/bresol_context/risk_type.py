@@ -68,16 +68,19 @@ BRESOL_RISK_TAXONOMY = {
     "ciberassetjament": {
         "label": "Cyberbullying o ciberassetjament",
         "definition": (
-            "Forma d'assetjament entre iguals realitzada a través de mitjans digitals "
-            "que permet la difusió ràpida i continuada del dany."
+            "Qualsevol forma d'assetjament, burla o rebuig realitzada a través de mitjans digitals. "
+            "Si el cas menciona WhatsApp, TikTok, xarxes socials, mòbils o internet, PRIORITZA SEMPRE aquesta categoria "
+            "i NO UTILITZIS MAI assetjament_escolar. El medi digital mana per sobre de l'assetjament físic."
         ),
         "minimum_elements": [
             "canal_digital",
             "conducta_digital_lesiva",
             "possible_victima_o_alumne_afectat",
-            "repeticio_o_persistencia",
         ],
         "key_indicators": [
+            "whatsapp",
+            "instagram",
+            "tiktok",
             "xarxes socials",
             "missatgeria",
             "videojocs online",
@@ -112,8 +115,8 @@ BRESOL_RISK_TAXONOMY = {
         ],
     },
 
-    "violencia_puntual": {
-        "label": "Violència puntual",
+    "conflicte_convivencia": {
+        "label": "Conflictes de convivència",
         "definition": (
             "Situació d'agressió o conflicte entre alumnes que no és repetit ni estructural "
             "i on no existeix un desequilibri clar de poder."
@@ -151,7 +154,7 @@ BRESOL_RISK_TAXONOMY = {
         "label": "Pressió de grup",
         "definition": (
             "Situació en què un alumne adopta conductes perjudicials per adaptar-se "
-            "o obtenir acceptació social dins d'un grup."
+            "o obtenir acceptació social dins d'un grup. OBLIGATÒRIAMENT usa aquesta categoria si algú actua 'per agradar als grans', 'per entrar al grup' o és obligat a robar o fer trapelleries per ser acceptat."
         ),
         "minimum_elements": [
             "conducta_influenciada_pel_grup",
@@ -164,6 +167,8 @@ BRESOL_RISK_TAXONOMY = {
             "lideratge del grup",
             "normalització de comportaments inadequats",
             "conductes que individualment no faria",
+            "robar per ser acceptat",
+            "agradar als més grans",
         ],
         "missing_info_questions": [
             "Hi ha pressió explícita o implícita del grup?",
@@ -386,11 +391,11 @@ BRESOL_RISK_TAXONOMY = {
         ],
     },
 
-    "vandalisme": {
-        "label": "Vandalisme i conductes disruptives associades",
+    "falta_greument_perjudicial": {
+        "label": "Faltes greument perjudicials i vandalisme",
         "definition": (
             "Conductes que impliquen deteriorament, destrucció o ús inadequat intencionat "
-            "d'espais, materials o propietats del centre o de l'entorn escolar."
+            "d'espais, materials o propietats del centre o de l'entorn escolar. INCLOU explícitament vandalisme, trencar portes, fer pintades o rebentar extintors."
         ),
         "minimum_elements": [
             "dany_material_o_conducta_disruptiva",
@@ -405,6 +410,10 @@ BRESOL_RISK_TAXONOMY = {
             "desafiament",
             "conflictes amb autoritat",
             "canvis conductuals recents",
+            "vandalisme",
+            "trencar portes",
+            "pintades despectives",
+            "extintor",
         ],
         "missing_info_questions": [
             "És una acció puntual o repetida?",
@@ -420,6 +429,114 @@ BRESOL_RISK_TAXONOMY = {
         "avoid_questions": [
             "Qui ho ha fet exactament?",
             "Per què trenques coses?",
+        ],
+    },
+
+    "conductes_odi_discriminacio": {
+        "label": "Conductes d'odi i discriminació",
+        "definition": (
+            "Situació de discriminació, odi o rebuig per raó d'origen, ètnia, orientació sexual, "
+            "identitat de gènere, religió o qualsevol altra condició personal o social."
+        ),
+        "minimum_elements": [
+            "conducta_discriminatoria",
+            "motiu_discriminacio",
+            "possible_alumne_afectat",
+        ],
+        "key_indicators": [
+            "insults racistes",
+            "LGTBIfòbia",
+            "homofòbia",
+            "xenofòbia",
+            "comentaris despectius per origen",
+            "rebuig per creences",
+            "exclusió per motius d'identitat",
+        ],
+        "missing_info_questions": [
+            "Quin ha estat el motiu aparent de la discriminació?",
+            "S'ha repetit en el temps o ha estat un fet aïllat?",
+            "Hi ha altres alumnes que estiguin patint la mateixa situació?",
+        ],
+        "safe_identification_questions": [
+            "A quin espai del centre acostuma a passar?",
+            "Hi ha algun docent que ho hagi pogut presenciar?",
+        ],
+        "avoid_questions": [
+            "Estàs segur que era amb aquesta intenció?",
+            "Per què no els ignores?",
+        ],
+    },
+
+    "violencies_masclistes": {
+        "label": "Violències masclistes",
+        "definition": (
+            "Qualsevol tipus de violència, control, coacció o abús de poder exercit "
+            "amb components de gènere sexistes, especialment cap a nenes o adolescents. INCLOU explícitament control de parella, prohibir sortir o amenaces de deixar-la."
+        ),
+        "minimum_elements": [
+            "tipus_violencia_o_control",
+            "possible_alumna_afectada",
+            "context_de_la_relacio",
+        ],
+        "key_indicators": [
+            "control de parella",
+            "comentaris sexistes",
+            "gelosia extrema",
+            "cosificació",
+            "violència de gènere",
+            "revisió del mòbil",
+            "aïllament de les amistats",
+            "amenaces de deixar la parella",
+            "prohibir vestir",
+            "prohibir sortir de festa",
+        ],
+        "missing_info_questions": [
+            "S'ha observat control sobre la manera de vestir, sortir o l'ús del mòbil?",
+            "Tenen o han tingut una relació afectiva o de parella?",
+            "L'alumna mostra por, canvis d'hàbits o aïllament?",
+        ],
+        "safe_identification_questions": [
+            "Saps si això passa dins o fora de l'entorn escolar?",
+            "Hi ha algun amic/amiga que ho hagi detectat?",
+        ],
+        "avoid_questions": [
+            "Per què no el deixes?",
+            "Segur que no ho fa per protegir-te?",
+        ],
+    },
+
+    "autolesions": {
+        "label": "Autolesions i autoagressió",
+        "definition": (
+            "Conductes d'autolesió física intencionada sovint per alleujar malestar emocional "
+            "profund, amb o sense intenció suïcida explícita."
+        ),
+        "minimum_elements": [
+            "conducta_autolesiva_observada",
+            "risc_immediat",
+            "estat_emocional",
+        ],
+        "key_indicators": [
+            "talls",
+            "cremades",
+            "esgarrapades",
+            "amagar parts del cos",
+            "roba llarga a l'estiu",
+            "malestar emocional intens",
+            "aïllament brusc",
+        ],
+        "missing_info_questions": [
+            "L'alumne està acompanyat i segur ara mateix?",
+            "Hi ha indicis d'instruments lesius al seu abast?",
+            "Ha expressat malestar emocional desbordant o dolor recentment?",
+        ],
+        "safe_identification_questions": [
+            "Qui ha detectat les lesions i en quin context?",
+            "S'ha activat ja algun professional de salut o el referent de benestar?",
+        ],
+        "avoid_questions": [
+            "Per què et fas això?",
+            "Vols cridar l'atenció?",
         ],
     },
 

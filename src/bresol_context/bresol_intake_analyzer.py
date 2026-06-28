@@ -47,6 +47,11 @@ CRITERI D'ESTRICTE RIGOR per a missing_minimum_elements:
 - En cas de DUBTE sobre si un element està cobert, SEMPRE afegeix-lo a missing_minimum_elements. És preferible demanar de més que donar per suposat.
 - La llista missing_minimum_elements ha de ser EXHAUSTIVA: revisa CADA element de minimum_elements del risc detectat i decideix un per un.
 
+Nivells d'urgència (urgency_level) — Avalua estrictament per la GRAVETAT dels fets descrits:
+- high: Situacions de risc vital, autolesions, ideació o intents suïcides (conducta_suicida), sospita o certesa d'abús o violència sexual (violencia_sexual), indicis greus de maltractament infantil a la llar (maltractament_infantil), violència física activa, reiterada o amb lesions, o qualsevol fet d'intensitat o impacte molt greu sobre l'alumne.
+- medium: Incidents de convivència d'intensitat moderada que requereixen atenció del centre però sense perill físic ni risc vital immediat. Inclou: insults ocasionals, exclusió social, rumors, aïllament, conflictes de convivència, faltes greument perjudicials.
+- low: Consultes purament informatives, dubtes sobre protocols o normes del centre, o tasques preventives de caràcter teòric sense cap incident real descrit.
+
 Retorna exactament aquest JSON:
 
 {{
@@ -61,6 +66,8 @@ Retorna exactament aquest JSON:
   "phase_assessment": "sense_indicis_delictius | indicis_possibles | indicis_clars_activitat_delictiva | unknown",
   "possible_crime_indicators": ["string"],
   "requires_urgent_review": true/false (true si hi ha conducta_suicida, violencia_sexual o indicis clars de delicte greu o risc vital immediat),
+  "urgency_level": "high | medium | low",
+  "is_out_of_scope": true/false (MOLT ESTRICTE: true si el tema NO està DIRECTAMENT relacionat amb convivència escolar, assetjament, benestar emocional, incidències, gestió de conflictes, o alertes de l'aplicació B-Resol. Qualsevol pregunta acadèmica teòrica com 'explica'm la teoria de la relativitat', història, geografia, o preguntes generals fora de la dinàmica de convivència són OUT OF SCOPE. Només posa false si és una consulta sobre fets concrets de convivència, protocols, lleis escolars o riscos en l'àmbit educatiu),
   "temporal_context_elements": ["string (llista d'expressions literals del text que indiquin moment del dia, dates, repetició, etc. Si no n'hi ha, llista buida [])"],
   "spatial_context_elements": ["string (llista d'expressions literals del text que indiquin el lloc físic o digital on han passat els fets. Si no n'hi ha, llista buida [])"],
   "enriched_context_hint": "string (pista de context molt breu per a cerca vectorial)",
@@ -73,7 +80,7 @@ class BresolIntakeAnalyzer:
     def __init__(
         self,
         gemini_api_key: str,
-        gemini_model: str = "gemini-1.5-flash",
+        gemini_model: str = "gemini-2.5-flash",
         temperature: float = 0.0,
     ) -> None:
         self.llm = ChatGoogleGenerativeAI(
@@ -103,10 +110,14 @@ class BresolIntakeAnalyzer:
 
             data = self._parse_json(raw_response)
 
+            raw_risk_category = self._normalize_category(data.get("risk_category"), "unknown")
+            if raw_risk_category not in BRESOL_RISK_TAXONOMY and raw_risk_category not in ["unknown", "general"]:
+                raw_risk_category = "general"
+
             return BresolIntakeAnalysis(
                 original_query=user_query,
-                bresol_case_type=self._safe_str(data.get("bresol_case_type"), "unknown"),
-                risk_category=self._safe_str(data.get("risk_category"), "unknown"),
+                bresol_case_type=self._normalize_category(data.get("bresol_case_type"), "unknown"),
+                risk_category=raw_risk_category,
                 detected_indicators=self._safe_list(data.get("detected_indicators")),
                 missing_information=self._safe_list(data.get("missing_information")),
                 missing_minimum_elements=self._safe_list(data.get("missing_minimum_elements")),
@@ -117,6 +128,8 @@ class BresolIntakeAnalyzer:
                 phase_assessment=self._safe_phase(data.get("phase_assessment")),
                 possible_crime_indicators=self._safe_list(data.get("possible_crime_indicators")),
                 requires_urgent_review=self._safe_bool(data.get("requires_urgent_review"), False),
+                urgency_level=self._safe_str(data.get("urgency_level"), "unknown"),
+                is_out_of_scope=self._safe_bool(data.get("is_out_of_scope"), False),
                 enriched_context_hint=self._safe_optional_str(data.get("enriched_context_hint")),
                 notes=self._safe_optional_str(data.get("notes")),
                 temporal_context_elements=self._safe_list(data.get("temporal_context_elements")),
@@ -142,6 +155,15 @@ class BresolIntakeAnalyzer:
     def _safe_str(self, value, default: str) -> str:
         if isinstance(value, str) and value.strip():
             return value.strip()
+        return default
+
+    def _normalize_category(self, value, default: str) -> str:
+        if isinstance(value, str) and value.strip():
+            # Eliminació bàsica d'accents per evitar problemes com "suïcida" vs "suicida"
+            clean = value.strip().lower()
+            clean = clean.replace('à', 'a').replace('è', 'e').replace('é', 'e').replace('í', 'i').replace('ï', 'i')
+            clean = clean.replace('ò', 'o').replace('ó', 'o').replace('ú', 'u').replace('ü', 'u')
+            return clean.replace(" ", "_").replace("-", "_")
         return default
 
     def _safe_optional_str(self, value) -> Optional[str]:
@@ -200,6 +222,8 @@ class BresolIntakeAnalyzer:
             phase_assessment="unknown",
             possible_crime_indicators=[],
             requires_urgent_review=is_urgent,
+            urgency_level="high" if is_urgent else "unknown",
+            is_out_of_scope=False,
             enriched_context_hint=None,
             notes=f"Fallback bresol intake. Error: {error}",
         )

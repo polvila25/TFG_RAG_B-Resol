@@ -48,8 +48,8 @@ class ContextBuilder:
             text = self._truncate(text, self.max_chars_per_chunk)
 
             block = f"""
-[FONT {index}]
-Document: {source_document}
+---
+Document {index}: {source_document}
 Pàgina: {source_page}
 Títol o apartat: {chunk_title}
 Tipus de document: {document_type}

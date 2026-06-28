@@ -43,6 +43,8 @@ class BresolIntakeAnalysis:
     possible_crime_indicators: List[str] = field(default_factory=list)
     
     requires_urgent_review: bool = False
+    urgency_level: str = "unknown"
+    is_out_of_scope: bool = False
     enriched_context_hint: Optional[str] = None
     notes: Optional[str] = None
     
