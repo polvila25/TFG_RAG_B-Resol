@@ -16,7 +16,7 @@ def get_qdrant_client() -> QdrantClient:
 
     Mode local:
         Desa la base vectorial dins del projecte:
-        storage/qdrant/
+        data/qdrant_db/
 
     Mode server:
         Es connecta a Qdrant aixecat amb Docker o servidor.

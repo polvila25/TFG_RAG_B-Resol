@@ -72,3 +72,14 @@ data/evaluations/
 
 
 assets/protocols/lista_circuits.txt
+
+
+#para subida final
+*.json
+*.csv
+
+*.txt
+
+*.lock
+
+*.sqlite

@@ -251,7 +251,7 @@ for i, message in enumerate(current_chat["messages"]):
         
         # Mostrar botó de descàrrega de PDF si existeix
         if message.get("pdf_filename"):
-            pdf_path = os.path.join("assets", "protocols", message["pdf_filename"])
+            pdf_path = os.path.join("data", "raw", "protocols", message["pdf_filename"])
             if os.path.exists(pdf_path):
                 with open(pdf_path, "rb") as pdf_file:
                     st.download_button(

@@ -6,18 +6,18 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-CHUNKS_PATH = PROJECT_ROOT / "data" / "procesed" / "chunks" / "all_chunks.json"
+CHUNKS_PATH = PROJECT_ROOT / "data" / "processed" / "chunks" / "all_chunks.json"
 
 EMBEDDED_CHUNKS_PATH = (
     PROJECT_ROOT
     / "data"
-    / "procesed"
+    / "processed"
     / "embeddings"
     / "all_chunks_embedded.json"
 )
 
 # Carpeta local on Qdrant desarà la BD vectorial
-QDRANT_LOCAL_PATH = PROJECT_ROOT / "storage" / "qdrant"
+QDRANT_LOCAL_PATH = PROJECT_ROOT / "data" / "qdrant_db"
 
 # ============================================================
 # QDRANT CONFIG
