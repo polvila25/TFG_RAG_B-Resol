@@ -1,0 +1,874 @@
+{
+    "metrics_summary": {
+        "total_consultes": 26,
+        "exactitud_categoria_percent": 80.77,
+        "exactitud_urgencia_percent": 65.38,
+        "exactitud_informacio_faltant_percent": 50.0,
+        "nivell_detall_mitja_rag": 6.58,
+        "nivell_detall_mitja_enquesta": 6.81,
+        "nivell_detall_mae": 2.18,
+        "nivell_detall_diferencia_mitjanes": -0.23
+    },
+    "case_by_case_results": [
+        {
+            "consulta_id": 1,
+            "text_consulta": "He vist a les dutxes després d'educació física que en Pol té marques de talls verticals als avantbraços. Ha intentat tapar-s'ho ràpidament amb la dessuadora, però era molt evident.",
+            "ground_truth": {
+                "categories": [
+                    "conducta_suicida",
+                    "autolesions"
+                ],
+                "urgency": "high",
+                "score": 8.0,
+                "missing_info": [
+                    "Falta saber si el fet s'ha repetit en el temps (persistència)."
+                ]
+            },
+            "rag_prediction": {
+                "category": "autolesions",
+                "urgency": "high",
+                "score": 3.9,
+                "missing_info_mapped": [
+                    "Falta identificar els autors/agressors.",
+                    "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix."
+                ],
+                "raw_missing_parameters": [
+                    "risc_immediat",
+                    "estat_emocional"
+                ]
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": true,
+                "missing_info_match": false,
+                "score_mae": 4.1
+            }
+        },
+        {
+            "consulta_id": 2,
+            "text_consulta": "Crec que hi ha una alumna del meu grup que està patint. Es passa l'hora del pati sola al lavabo, i l'altre dia la vaig sentir vomitar després de dinar. Està perdent molt de pes darrerament.",
+            "ground_truth": {
+                "categories": [
+                    "tca"
+                ],
+                "urgency": "medium",
+                "score": 4.0,
+                "missing_info": [
+                    "Falta saber si el fet s'ha repetit en el temps (persistència).",
+                    "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix.",
+                    "noms"
+                ]
+            },
+            "rag_prediction": {
+                "category": "tca",
+                "urgency": "high",
+                "score": 8.5,
+                "missing_info_mapped": [
+                    "Falta identificar els autors/agressors."
+                ],
+                "raw_missing_parameters": []
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": false,
+                "missing_info_match": false,
+                "score_mae": 4.5
+            }
+        },
+        {
+            "consulta_id": 3,
+            "text_consulta": "Ahir a la tarda, en sortir de l'institut, un grup d'alumnes més grans va rodejar a en Marc de 1r d'ESO, el van tirar a terra i li van donar cops de peu mentre li deien que era un inútil. És el tercer cop que passa aquest mes.",
+            "ground_truth": {
+                "categories": [
+                    "assetjament_escolar",
+                    "violencies_masclistes",
+                    "maltractament_infantil",
+                    "pressio_grup",
+                    "conflicte_convivencia"
+                ],
+                "urgency": "high",
+                "score": 8.0,
+                "missing_info": [
+                    "Falta identificar els autors/agressors."
+                ]
+            },
+            "rag_prediction": {
+                "category": "assetjament_escolar",
+                "urgency": "high",
+                "score": 8.5,
+                "missing_info_mapped": [
+                    "Falta identificar els autors/agressors."
+                ],
+                "raw_missing_parameters": []
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": true,
+                "missing_info_match": true,
+                "score_mae": 0.5
+            }
+        },
+        {
+            "consulta_id": 4,
+            "text_consulta": "M'han arribat rumors de que estan circulant unes fotos molt compromeses de la Laia per un grup de WhatsApp de 3r d'ESO. Sembla que estan fent mems per humiliar-la.",
+            "ground_truth": {
+                "categories": [
+                    "ciberassetjament"
+                ],
+                "urgency": "high",
+                "score": 9.0,
+                "missing_info": [
+                    "Falta identificar els autors/agressors."
+                ]
+            },
+            "rag_prediction": {
+                "category": "unknown",
+                "urgency": "unknown",
+                "score": 4.2,
+                "missing_info_mapped": [
+                    "Falta identificar els autors/agressors."
+                ],
+                "raw_missing_parameters": [
+                    "persona_o_grup_afectat",
+                    "safe_identification"
+                ]
+            },
+            "metrics": {
+                "category_match": false,
+                "urgency_match": false,
+                "missing_info_match": true,
+                "score_mae": 4.8
+            }
+        },
+        {
+            "consulta_id": 5,
+            "text_consulta": "La mestra de plàstica m'ha avisat que la nena nova de P5 porta morats a l'esquena i a la cara, i quan li ha preguntat què li ha passat s'ha posat molt nerviosa i no ha volgut parlar de casa seva.",
+            "ground_truth": {
+                "categories": [
+                    "assetjament_escolar",
+                    "maltractament_infantil"
+                ],
+                "urgency": "high",
+                "score": 6.0,
+                "missing_info": [
+                    "Falta identificar els autors/agressors.",
+                    "nom victima"
+                ]
+            },
+            "rag_prediction": {
+                "category": "maltractament_infantil",
+                "urgency": "high",
+                "score": 5.0,
+                "missing_info_mapped": [
+                    "Falta identificar els autors/agressors.",
+                    "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix."
+                ],
+                "raw_missing_parameters": [
+                    "context_familiar_o_cuidador",
+                    "risc_immediat"
+                ]
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": true,
+                "missing_info_match": true,
+                "score_mae": 1.0
+            }
+        },
+        {
+            "consulta_id": 6,
+            "text_consulta": "Al vestuari masculí hi ha uns quants nois que porten tota la setmana fent bromes de mal gust sobre la condició sexual d'un company, dient-li 'marica' i imitant-lo per riure's d'ell.",
+            "ground_truth": {
+                "categories": [
+                    "assetjament_escolar",
+                    "conductes_odi_discriminacio",
+                    "pressio_grup",
+                    "conflicte_convivencia",
+                    "general"
+                ],
+                "urgency": "medium",
+                "score": 7.0,
+                "missing_info": [
+                    "Falta identificar els autors/agressors."
+                ]
+            },
+            "rag_prediction": {
+                "category": "assetjament_escolar",
+                "urgency": "medium",
+                "score": 9.0,
+                "missing_info_mapped": [
+                    "Res, ja tinc tota la informació necessària per obrir protocol complet."
+                ],
+                "raw_missing_parameters": []
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": true,
+                "missing_info_match": false,
+                "score_mae": 2.0
+            }
+        },
+        {
+            "consulta_id": 7,
+            "text_consulta": "El xicot de la Sara de 1r de Batxillerat la va agafar fort del braç al pati perquè ella estava parlant amb un altre noi, i li va dir que com ho tornés a fer li trencaria el mòbil. Ella plorava i li demanava perdó.",
+            "ground_truth": {
+                "categories": [
+                    "violencies_masclistes",
+                    "conflicte_convivencia"
+                ],
+                "urgency": "medium",
+                "score": 7.0,
+                "missing_info": [
+                    "Falta saber si el fet s'ha repetit en el temps (persistència)."
+                ]
+            },
+            "rag_prediction": {
+                "category": "violencies_masclistes",
+                "urgency": "high",
+                "score": 9.0,
+                "missing_info_mapped": [
+                    "Res, ja tinc tota la informació necessària per obrir protocol complet."
+                ],
+                "raw_missing_parameters": []
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": false,
+                "missing_info_match": false,
+                "score_mae": 2.0
+            }
+        },
+        {
+            "consulta_id": 8,
+            "text_consulta": "Acabo de veure un noi de cicles formatius passant unes bossetes petites amb una substància blanca a uns alumnes de 4t d'ESO a prop de la pista de bàsquet.",
+            "ground_truth": {
+                "categories": [
+                    "consum_substancies"
+                ],
+                "urgency": "high",
+                "score": 7.0,
+                "missing_info": [
+                    "Falta identificar els autors/agressors.",
+                    "Falta saber si el fet s'ha repetit en el temps (persistència)."
+                ]
+            },
+            "rag_prediction": {
+                "category": "consum_substancies",
+                "urgency": "high",
+                "score": 5.0,
+                "missing_info_mapped": [
+                    "Falta identificar els autors/agressors.",
+                    "Falta saber si el fet s'ha repetit en el temps (persistència)."
+                ],
+                "raw_missing_parameters": [
+                    "frequencia_o_tipus_consum",
+                    "afectacio_escolar_o_conductual",
+                    "safe_identification"
+                ]
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": true,
+                "missing_info_match": true,
+                "score_mae": 2.0
+            }
+        },
+        {
+            "consulta_id": 9,
+            "text_consulta": "Dues alumnes s'han insultat fortament a l'aula durant el treball en grup i una d'elles ha tirat els fulls a terra de la ràbia. S'han enfadat molt però ho hem aturat de seguida.",
+            "ground_truth": {
+                "categories": [
+                    "pressio_grup",
+                    "conflicte_convivencia",
+                    "general"
+                ],
+                "urgency": "medium",
+                "score": 5.0,
+                "missing_info": [
+                    "Falta identificar els autors/agressors.",
+                    "Falta saber si el fet s'ha repetit en el temps (persistència)."
+                ]
+            },
+            "rag_prediction": {
+                "category": "conflicte_convivencia",
+                "urgency": "medium",
+                "score": 4.9,
+                "missing_info_mapped": [
+                    "Falta identificar els autors/agressors."
+                ],
+                "raw_missing_parameters": [
+                    "alumnes_implicats_o_afectats",
+                    "safe_identification"
+                ]
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": true,
+                "missing_info_match": true,
+                "score_mae": 0.09999999999999964
+            }
+        },
+        {
+            "consulta_id": 10,
+            "text_consulta": "Hi ha un grup d'alumnes que sistemàticament trenca les normes de classe, interrompent el professor a crits i negant-se a fer cap activitat durant tres dies seguits.",
+            "ground_truth": {
+                "categories": [
+                    "conflicte_convivencia",
+                    "general",
+                    "falta_greument_perjudicial"
+                ],
+                "urgency": "medium",
+                "score": 6.0,
+                "missing_info": [
+                    "Falta identificar els autors/agressors.",
+                    "Falta saber si el fet s'ha repetit en el temps (persistència)."
+                ]
+            },
+            "rag_prediction": {
+                "category": "falta_greument_perjudicial",
+                "urgency": "medium",
+                "score": 8.5,
+                "missing_info_mapped": [],
+                "raw_missing_parameters": [
+                    "safe_identification"
+                ]
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": true,
+                "missing_info_match": false,
+                "score_mae": 2.5
+            }
+        },
+        {
+            "consulta_id": 11,
+            "text_consulta": "Vull saber quin article de la LOPIVI determina el rol del coordinador de convivència als centres educatius",
+            "ground_truth": {
+                "categories": [
+                    "general"
+                ],
+                "urgency": "low",
+                "score": 8.0,
+                "missing_info": [
+                    "Res, ja tinc tota la informació necessària per obrir protocol complet."
+                ]
+            },
+            "rag_prediction": {
+                "category": "general",
+                "urgency": "low",
+                "score": 3.7,
+                "missing_info_mapped": [
+                    "Falta identificar els autors/agressors."
+                ],
+                "raw_missing_parameters": [
+                    "persona_o_grup_afectat",
+                    "safe_identification"
+                ]
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": true,
+                "missing_info_match": false,
+                "score_mae": 4.3
+            }
+        },
+        {
+            "consulta_id": 12,
+            "text_consulta": "Una alumna m'ha explicat que el seu padrastre entra a la seva habitació a les nits quan la seva mare no hi és i li fa tocaments que a ella no li agraden. Està molt espantada.",
+            "ground_truth": {
+                "categories": [
+                    "violencia_sexual"
+                ],
+                "urgency": "high",
+                "score": 7.0,
+                "missing_info": [
+                    "Falta identificar els autors/agressors.",
+                    "Falta saber si el fet s'ha repetit en el temps (persistència).",
+                    "Nom victima"
+                ]
+            },
+            "rag_prediction": {
+                "category": "violencia_sexual",
+                "urgency": "high",
+                "score": 9.0,
+                "missing_info_mapped": [
+                    "Res, ja tinc tota la informació necessària per obrir protocol complet."
+                ],
+                "raw_missing_parameters": []
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": true,
+                "missing_info_match": false,
+                "score_mae": 2.0
+            }
+        },
+        {
+            "consulta_id": 13,
+            "text_consulta": "En Joan arriba cada dia sense esmorzar, amb la roba bruta des de fa setmanes, i avui m'ha confessat que a casa seva no tenen llum i ningú li fa cas perquè els seus pares mai hi són.",
+            "ground_truth": {
+                "categories": [
+                    "general",
+                    "maltractament_infantil"
+                ],
+                "urgency": "high",
+                "score": 8.0,
+                "missing_info": [
+                    "Falta saber si el fet s'ha repetit en el temps (persistència).",
+                    "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix."
+                ]
+            },
+            "rag_prediction": {
+                "category": "maltractament_infantil",
+                "urgency": "high",
+                "score": 9.0,
+                "missing_info_mapped": [
+                    "Res, ja tinc tota la informació necessària per obrir protocol complet."
+                ],
+                "raw_missing_parameters": []
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": true,
+                "missing_info_match": false,
+                "score_mae": 1.0
+            }
+        },
+        {
+            "consulta_id": 14,
+            "text_consulta": "Cada vegada que la Fàtima intervé a classe, els del fons comencen a imitar el seu accent i a riure's dient que se'n torni al seu país.",
+            "ground_truth": {
+                "categories": [
+                    "conductes_odi_discriminacio",
+                    "pressio_grup",
+                    "conflicte_convivencia",
+                    "assetjament_escolar"
+                ],
+                "urgency": "medium",
+                "score": 8.0,
+                "missing_info": [
+                    "Falta identificar els autors/agressors.",
+                    "Falta saber si el fet s'ha repetit en el temps (persistència)."
+                ]
+            },
+            "rag_prediction": {
+                "category": "assetjament_escolar",
+                "urgency": "medium",
+                "score": 7.1,
+                "missing_info_mapped": [
+                    "Falta identificar els autors/agressors."
+                ],
+                "raw_missing_parameters": [
+                    "desequilibri_poder",
+                    "intencionalitat"
+                ]
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": true,
+                "missing_info_match": true,
+                "score_mae": 0.9000000000000004
+            }
+        },
+        {
+            "consulta_id": 15,
+            "text_consulta": "Fa temps que noto que el grup de noies sembla que directament ningú li parla i l'han exclós de qualsevol activitat que es faci en grup. la víctima era una noia molt sociable i de sobte és com si no existís perquè directament la resta de persones (en especial les noies) del curs la ignoren completament. li recriminen el que ha fet. la noia segur que no ho passa bé, se la veu trista. no sé valorar els riscos associats al cas. per això tinc por de no actuar correctament en el seguiment del cas.",
+            "ground_truth": {
+                "categories": [
+                    "maltractament_infantil",
+                    "conflicte_convivencia",
+                    "general"
+                ],
+                "urgency": "medium",
+                "score": 7.0,
+                "missing_info": [
+                    "Falta identificar els autors/agressors.",
+                    "Falta saber si el fet s'ha repetit en el temps (persistència).",
+                    "Falta aclarir l'espai físic/digital on ha passat.",
+                    "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix."
+                ]
+            },
+            "rag_prediction": {
+                "category": "assetjament_escolar",
+                "urgency": "medium",
+                "score": 8.8,
+                "missing_info_mapped": [
+                    "Res, ja tinc tota la informació necessària per obrir protocol complet."
+                ],
+                "raw_missing_parameters": []
+            },
+            "metrics": {
+                "category_match": false,
+                "urgency_match": true,
+                "missing_info_match": false,
+                "score_mae": 1.8000000000000007
+            }
+        },
+        {
+            "consulta_id": 16,
+            "text_consulta": "Em preocupa l'Albert. A l'hora del menjador amaga el menjar als tovallons per no haver-s'ho d'empassar, i demana constantment anar al lavabo just després.",
+            "ground_truth": {
+                "categories": [
+                    "tca"
+                ],
+                "urgency": "medium",
+                "score": 9.0,
+                "missing_info": [
+                    "Falta saber si el fet s'ha repetit en el temps (persistència)."
+                ]
+            },
+            "rag_prediction": {
+                "category": "tca",
+                "urgency": "medium",
+                "score": 4.5,
+                "missing_info_mapped": [
+                    "Falta identificar els autors/agressors."
+                ],
+                "raw_missing_parameters": [
+                    "possible_afectacio_fisica_o_emocional",
+                    "impacte_academic_social_o_emocional"
+                ]
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": true,
+                "missing_info_match": false,
+                "score_mae": 4.5
+            }
+        },
+        {
+            "consulta_id": 17,
+            "text_consulta": "Al grup de WhatsApp de la classe hi ha hagut una forta discussió per culpa d'un treball de grup. Dos alumnes s'han dit de tot i estan molt enfadats.",
+            "ground_truth": {
+                "categories": [
+                    "conflicte_convivencia"
+                ],
+                "urgency": "medium",
+                "score": 6.0,
+                "missing_info": [
+                    "Falta identificar els autors/agressors.",
+                    "Falta saber si el fet s'ha repetit en el temps (persistència).",
+                    "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix."
+                ]
+            },
+            "rag_prediction": {
+                "category": "conflicte_convivencia",
+                "urgency": "medium",
+                "score": 4.6,
+                "missing_info_mapped": [
+                    "Falta identificar els autors/agressors."
+                ],
+                "raw_missing_parameters": [
+                    "alumnes_implicats_o_afectats",
+                    "safe_identification"
+                ]
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": true,
+                "missing_info_match": true,
+                "score_mae": 1.4000000000000004
+            }
+        },
+        {
+            "consulta_id": 18,
+            "text_consulta": "Al vestidor, les noies de 2n s'han començat a burlar del pes de la nova companya. Han començat a enviar stickers d'ella modificats al grup de la classe",
+            "ground_truth": {
+                "categories": [
+                    "assetjament_escolar",
+                    "ciberassetjament",
+                    "violencies_masclistes",
+                    "conflicte_convivencia",
+                    "general"
+                ],
+                "urgency": "medium",
+                "score": 6.0,
+                "missing_info": [
+                    "Falta identificar els autors/agressors.",
+                    "Falta saber si el fet s'ha repetit en el temps (persistència).",
+                    "nom victima"
+                ]
+            },
+            "rag_prediction": {
+                "category": "unknown",
+                "urgency": "unknown",
+                "score": 4.2,
+                "missing_info_mapped": [
+                    "Falta identificar els autors/agressors."
+                ],
+                "raw_missing_parameters": [
+                    "persona_o_grup_afectat",
+                    "safe_identification"
+                ]
+            },
+            "metrics": {
+                "category_match": false,
+                "urgency_match": false,
+                "missing_info_match": true,
+                "score_mae": 1.7999999999999998
+            }
+        },
+        {
+            "consulta_id": 19,
+            "text_consulta": "Una mare ha trucat per dir que la seva filla no vindrà avui a classe perquè un noi de 4t l'està obligant a enviar-li fotos íntimes i diu que si no ho fa publicarà unes que ja té.",
+            "ground_truth": {
+                "categories": [
+                    "ciberassetjament",
+                    "violencia_sexual",
+                    "violencies_masclistes"
+                ],
+                "urgency": "high",
+                "score": 8.0,
+                "missing_info": [
+                    "Falta identificar els autors/agressors.",
+                    "Falta saber si el fet s'ha repetit en el temps (persistència)."
+                ]
+            },
+            "rag_prediction": {
+                "category": "violencia_sexual",
+                "urgency": "high",
+                "score": 9.0,
+                "missing_info_mapped": [
+                    "Res, ja tinc tota la informació necessària per obrir protocol complet."
+                ],
+                "raw_missing_parameters": []
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": true,
+                "missing_info_match": false,
+                "score_mae": 1.0
+            }
+        },
+        {
+            "consulta_id": 20,
+            "text_consulta": "Des de principi de curs hi ha un grup de nois que em molesten constantment. Primer eren bromes, però ara m’insulten, em fan fotos sense permís i les ensenyen als altres. L’altre dia em van empènyer a les escales i ningú va fer res. Tinc por que vagi a pitjor",
+            "ground_truth": {
+                "categories": [
+                    "assetjament_escolar",
+                    "ciberassetjament",
+                    "conflicte_convivencia",
+                    "general"
+                ],
+                "urgency": "medium",
+                "score": 8.0,
+                "missing_info": [
+                    "Falta identificar els autors/agressors."
+                ]
+            },
+            "rag_prediction": {
+                "category": "assetjament_escolar",
+                "urgency": "high",
+                "score": 5.1,
+                "missing_info_mapped": [
+                    "Falta identificar els autors/agressors."
+                ],
+                "raw_missing_parameters": [
+                    "possible_victima_o_alumne_afectat",
+                    "desequilibri_poder",
+                    "intencionalitat"
+                ]
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": false,
+                "missing_info_match": true,
+                "score_mae": 2.9000000000000004
+            }
+        },
+        {
+            "consulta_id": 21,
+            "text_consulta": "Un amic meu m’ha dit diverses vegades que no vol continuar vivint. Diu que està cansat de tot, que ningú l’entén i que ha buscat maneres de fer-se mal. Em preocupa molt.",
+            "ground_truth": {
+                "categories": [
+                    "conducta_suicida"
+                ],
+                "urgency": "high",
+                "score": 6.0,
+                "missing_info": [
+                    "Falta identificar els autors/agressors.",
+                    "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix."
+                ]
+            },
+            "rag_prediction": {
+                "category": "conducta_suicida",
+                "urgency": "high",
+                "score": 6.3,
+                "missing_info_mapped": [
+                    "Falta identificar els autors/agressors.",
+                    "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix."
+                ],
+                "raw_missing_parameters": [
+                    "alumne_acompanyat_o_seguretat_actual",
+                    "safe_identification"
+                ]
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": true,
+                "missing_info_match": true,
+                "score_mae": 0.2999999999999998
+            }
+        },
+        {
+            "consulta_id": 22,
+            "text_consulta": "El meu nòvio em controla constantment. Em demana el mòbil, vol saber amb qui parlo i s’enfada si quedo amb amigues. Si no li contesto ràpid em diu que és perquè l’enganyo. Últimament em crida molt i em fa sentir culpable de tot.",
+            "ground_truth": {
+                "categories": [
+                    "violencies_masclistes"
+                ],
+                "urgency": "medium",
+                "score": 6.0,
+                "missing_info": [
+                    "Falta identificar els autors/agressors.",
+                    "nom victima"
+                ]
+            },
+            "rag_prediction": {
+                "category": "violencies_masclistes",
+                "urgency": "high",
+                "score": 8.8,
+                "missing_info_mapped": [
+                    "Res, ja tinc tota la informació necessària per obrir protocol complet."
+                ],
+                "raw_missing_parameters": []
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": false,
+                "missing_info_match": false,
+                "score_mae": 2.8000000000000007
+            }
+        },
+        {
+            "consulta_id": 23,
+            "text_consulta": "Des que vaig dir que soc gai, alguns companys em fan comentaris ofensius i m’exclouen. També han escrit coses sobre mi a la pissarra. Em fa por explicar-ho.",
+            "ground_truth": {
+                "categories": [
+                    "assetjament_escolar",
+                    "maltractament_infantil",
+                    "general"
+                ],
+                "urgency": "medium",
+                "score": 6.0,
+                "missing_info": [
+                    "Falta identificar els autors/agressors.",
+                    "Falta saber si el fet s'ha repetit en el temps (persistència).",
+                    "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix."
+                ]
+            },
+            "rag_prediction": {
+                "category": "conductes_odi_discriminacio",
+                "urgency": "medium",
+                "score": 8.5,
+                "missing_info_mapped": [
+                    "Falta identificar els autors/agressors."
+                ],
+                "raw_missing_parameters": []
+            },
+            "metrics": {
+                "category_match": false,
+                "urgency_match": true,
+                "missing_info_match": true,
+                "score_mae": 2.5
+            }
+        },
+        {
+            "consulta_id": 24,
+            "text_consulta": "Des de fa mesos em sento molt trist i sense energies. No tinc ganes de sortir, ni de parlar amb ningú, ni d’estudiar. Em costa dormir i cada dia em sento pitjor. No sé si això és normal.",
+            "ground_truth": {
+                "categories": [
+                    "conducta_suicida"
+                ],
+                "urgency": "medium",
+                "score": 5.0,
+                "missing_info": [
+                    "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix.",
+                    "nom"
+                ]
+            },
+            "rag_prediction": {
+                "category": "autolesions",
+                "urgency": "high",
+                "score": 3.7,
+                "missing_info_mapped": [
+                    "Falta identificar els autors/agressors.",
+                    "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix."
+                ],
+                "raw_missing_parameters": [
+                    "conducta_autolesiva_observada",
+                    "risc_immediat"
+                ]
+            },
+            "metrics": {
+                "category_match": false,
+                "urgency_match": false,
+                "missing_info_match": true,
+                "score_mae": 1.2999999999999998
+            }
+        },
+        {
+            "consulta_id": 25,
+            "text_consulta": "Des de fa mesos em sento molt trist i sense energies. No tinc ganes de sortir, ni de parlar amb ningú, ni d’estudiar. Em costa dormir i cada dia em sento pitjor. No sé si això és normal.",
+            "ground_truth": {
+                "categories": [
+                    "conducta_suicida"
+                ],
+                "urgency": "medium",
+                "score": 6.0,
+                "missing_info": [
+                    "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix.",
+                    "nom"
+                ]
+            },
+            "rag_prediction": {
+                "category": "conducta_suicida",
+                "urgency": "high",
+                "score": 3.7,
+                "missing_info_mapped": [
+                    "Falta identificar els autors/agressors.",
+                    "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix."
+                ],
+                "raw_missing_parameters": [
+                    "risc_immediat",
+                    "alumne_acompanyat_o_seguretat_actual"
+                ]
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": false,
+                "missing_info_match": true,
+                "score_mae": 2.3
+            }
+        },
+        {
+            "consulta_id": 26,
+            "text_consulta": "La meva millor amiga ha perdut molt pes en poc temps. Sempre diu que està grossa encara que no ho està i moltes vegades no dina. També va al lavabo just després de menjar.",
+            "ground_truth": {
+                "categories": [
+                    "tca"
+                ],
+                "urgency": "medium",
+                "score": 6.0,
+                "missing_info": [
+                    "noms"
+                ]
+            },
+            "rag_prediction": {
+                "category": "tca",
+                "urgency": "high",
+                "score": 8.5,
+                "missing_info_mapped": [
+                    "Falta identificar els autors/agressors."
+                ],
+                "raw_missing_parameters": []
+            },
+            "metrics": {
+                "category_match": true,
+                "urgency_match": false,
+                "missing_info_match": false,
+                "score_mae": 2.5
+            }
+        }
+    ]
+}

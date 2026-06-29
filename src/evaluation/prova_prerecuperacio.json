@@ -1,0 +1,402 @@
+[
+    {
+        "consulta_id": 1,
+        "categoria_risc": [
+            "Conducta suïcida",
+            "Autolesions i autoagressió"
+        ],
+        "nivell_urgencia": "Alt",
+        "nota_detall": 8,
+        "informacio_falta": [
+            "Falta saber si el fet s'ha repetit en el temps (persistència)."
+        ],
+        "text_consulta": "He vist a les dutxes després d'educació física que en Pol té marques de talls verticals als avantbraços. Ha intentat tapar-s'ho ràpidament amb la dessuadora, però era molt evident.",
+        "tipus_autor": "docent"
+    },
+    {
+        "consulta_id": 2,
+        "categoria_risc": [
+            "Trastorns de la conducta alimentària (TCA)"
+        ],
+        "nivell_urgencia": "Mitjà",
+        "nota_detall": 4,
+        "informacio_falta": [
+            "Falta saber si el fet s'ha repetit en el temps (persistència).",
+            "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix.",
+            "noms"
+        ],
+        "text_consulta": "Crec que hi ha una alumna del meu grup que està patint. Es passa l'hora del pati sola al lavabo, i l'altre dia la vaig sentir vomitar després de dinar. Està perdent molt de pes darrerament.",
+        "tipus_autor": "anònima"
+    },
+    {
+        "consulta_id": 3,
+        "categoria_risc": [
+            "Assetjament escolar (Bullying)",
+            "Violències masclistes",
+            "Maltractament infantil",
+            "Pressió de grup",
+            "Conflictes de convivència"
+        ],
+        "nivell_urgencia": "Alt",
+        "nota_detall": 8,
+        "informacio_falta": [
+            "Falta identificar els autors/agressors."
+        ],
+        "text_consulta": "Ahir a la tarda, en sortir de l'institut, un grup d'alumnes més grans va rodejar a en Marc de 1r d'ESO, el van tirar a terra i li van donar cops de peu mentre li deien que era un inútil. És el tercer cop que passa aquest mes.",
+        "nom_implicat": "Marc",
+        "curs_implicat": "1r d'ESO",
+        "tipus_autor": "identificada"
+    },
+    {
+        "consulta_id": 4,
+        "categoria_risc": [
+            "Ciberassetjament"
+        ],
+        "nivell_urgencia": "Alt",
+        "nota_detall": 9,
+        "informacio_falta": [
+            "Falta identificar els autors/agressors."
+        ],
+        "text_consulta": "M'han arribat rumors de que estan circulant unes fotos molt compromeses de la Laia per un grup de WhatsApp de 3r d'ESO. Sembla que estan fent mems per humiliar-la.",
+        "nom_implicat": "Laia",
+        "curs_implicat": "3r d'ESO",
+        "tipus_autor": "identificada"
+    },
+    {
+        "consulta_id": 5,
+        "categoria_risc": [
+            "Assetjament escolar (Bullying)",
+            "Maltractament infantil"
+        ],
+        "nivell_urgencia": "Alt",
+        "nota_detall": 6,
+        "informacio_falta": [
+            "Falta identificar els autors/agressors.",
+            "nom victima"
+        ],
+        "text_consulta": "La mestra de plàstica m'ha avisat que la nena nova de P5 porta morats a l'esquena i a la cara, i quan li ha preguntat què li ha passat s'ha posat molt nerviosa i no ha volgut parlar de casa seva.",
+        "tipus_autor": "anònima"
+    },
+    {
+        "consulta_id": 6,
+        "categoria_risc": [
+            "Assetjament escolar (Bullying)",
+            "Conductes d'odi i discriminació",
+            "Pressió de grup",
+            "Conflictes de convivència",
+            "Situació general de convivència"
+        ],
+        "nivell_urgencia": "Mitjà",
+        "nota_detall": 7,
+        "informacio_falta": [
+            "Falta identificar els autors/agressors."
+        ],
+        "text_consulta": "Al vestuari masculí hi ha uns quants nois que porten tota la setmana fent bromes de mal gust sobre la condició sexual d'un company, dient-li 'marica' i imitant-lo per riure's d'ell.",
+        "tipus_autor": "anònima"
+    },
+    {
+        "consulta_id": 7,
+        "categoria_risc": [
+            "Violències masclistes",
+            "Conflictes de convivència"
+        ],
+        "nivell_urgencia": "Mitjà",
+        "nota_detall": 7,
+        "informacio_falta": [
+            "Falta saber si el fet s'ha repetit en el temps (persistència)."
+        ],
+        "text_consulta": "El xicot de la Sara de 1r de Batxillerat la va agafar fort del braç al pati perquè ella estava parlant amb un altre noi, i li va dir que com ho tornés a fer li trencaria el mòbil. Ella plorava i li demanava perdó.",
+        "tipus_autor": "anònima"
+    },
+    {
+        "consulta_id": 8,
+        "categoria_risc": [
+            "Consum de substàncies"
+        ],
+        "nivell_urgencia": "Alt",
+        "nota_detall": 7,
+        "informacio_falta": [
+            "Falta identificar els autors/agressors.",
+            "Falta saber si el fet s'ha repetit en el temps (persistència)."
+        ],
+        "text_consulta": "Acabo de veure un noi de cicles formatius passant unes bossetes petites amb una substància blanca a uns alumnes de 4t d'ESO a prop de la pista de bàsquet.",
+        "tipus_autor": "anònima"
+    },
+    {
+        "consulta_id": 9,
+        "categoria_risc": [
+            "Pressió de grup",
+            "Conflictes de convivència",
+            "Situació general de convivència"
+        ],
+        "nivell_urgencia": "Mitjà",
+        "nota_detall": 5,
+        "informacio_falta": [
+            "Falta identificar els autors/agressors.",
+            "Falta saber si el fet s'ha repetit en el temps (persistència)."
+        ],
+        "text_consulta": "Dues alumnes s'han insultat fortament a l'aula durant el treball en grup i una d'elles ha tirat els fulls a terra de la ràbia. S'han enfadat molt però ho hem aturat de seguida.",
+        "tipus_autor": "anònima"
+    },
+    {
+        "consulta_id": 10,
+        "categoria_risc": [
+            "Conflictes de convivència",
+            "Situació general de convivència",
+            "Faltes greument perjudicials i vandalisme"
+        ],
+        "nivell_urgencia": "Mitjà",
+        "nota_detall": 6,
+        "informacio_falta": [
+            "Falta identificar els autors/agressors.",
+            "Falta saber si el fet s'ha repetit en el temps (persistència)."
+        ],
+        "text_consulta": "Hi ha un grup d'alumnes que sistemàticament trenca les normes de classe, interrompent el professor a crits i negant-se a fer cap activitat durant tres dies seguits.",
+        "nom_implicat": "Marc",
+        "curs_implicat": "3r d'ESO",
+        "tipus_autor": "identificada"
+    },
+    {
+        "consulta_id": 11,
+        "categoria_risc": [
+            "Situació general de convivència"
+        ],
+        "nivell_urgencia": "Baix",
+        "nota_detall": 8,
+        "informacio_falta": [
+            "Res, ja tinc tota la informació necessària per obrir protocol complet."
+        ],
+        "text_consulta": "Vull saber quin article de la LOPIVI determina el rol del coordinador de convivència als centres educatius",
+        "tipus_autor": "docent"
+    },
+    {
+        "consulta_id": 12,
+        "categoria_risc": [
+            "Violència sexual o Abús"
+        ],
+        "nivell_urgencia": "Alt",
+        "nota_detall": 7,
+        "informacio_falta": [
+            "Falta identificar els autors/agressors.",
+            "Falta saber si el fet s'ha repetit en el temps (persistència).",
+            "Nom victima"
+        ],
+        "text_consulta": "Una alumna m'ha explicat que el seu padrastre entra a la seva habitació a les nits quan la seva mare no hi és i li fa tocaments que a ella no li agraden. Està molt espantada.",
+        "tipus_autor": "anònima"
+    },
+    {
+        "consulta_id": 13,
+        "categoria_risc": [
+            "Situació general de convivència",
+            "Maltractament infantil"
+        ],
+        "nivell_urgencia": "Alt",
+        "nota_detall": 8,
+        "informacio_falta": [
+            "Falta saber si el fet s'ha repetit en el temps (persistència).",
+            "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix."
+        ],
+        "text_consulta": "En Joan arriba cada dia sense esmorzar, amb la roba bruta des de fa setmanes, i avui m'ha confessat que a casa seva no tenen llum i ningú li fa cas perquè els seus pares mai hi són.",
+        "tipus_autor": "docent"
+    },
+    {
+        "consulta_id": 14,
+        "categoria_risc": [
+            "Conductes d'odi i discriminació",
+            "Pressió de grup",
+            "Conflictes de convivència",
+            "Assetjament escolar (Bullying)"
+        ],
+        "nivell_urgencia": "Mitjà",
+        "nota_detall": 8,
+        "informacio_falta": [
+            "Falta identificar els autors/agressors.",
+            "Falta saber si el fet s'ha repetit en el temps (persistència)."
+        ],
+        "text_consulta": "Cada vegada que la Fàtima intervé a classe, els del fons comencen a imitar el seu accent i a riure's dient que se'n torni al seu país.",
+        "tipus_autor": "docent"
+    },
+    {
+        "consulta_id": 15,
+        "categoria_risc": [
+            "Maltractament infantil",
+            "Conflictes de convivència",
+            "Situació general de convivència"
+        ],
+        "nivell_urgencia": "Mitjà",
+        "nota_detall": 7,
+        "informacio_falta": [
+            "Falta identificar els autors/agressors.",
+            "Falta saber si el fet s'ha repetit en el temps (persistència).",
+            "Falta aclarir l'espai físic/digital on ha passat.",
+            "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix."
+        ],
+        "text_consulta": "Fa temps que noto que el grup de noies sembla que directament ningú li parla i l'han exclós de qualsevol activitat que es faci en grup. la víctima era una noia molt sociable i de sobte és com si no existís perquè directament la resta de persones (en especial les noies) del curs la ignoren completament. li recriminen el que ha fet. la noia segur que no ho passa bé, se la veu trista. no sé valorar els riscos associats al cas. per això tinc por de no actuar correctament en el seguiment del cas.",
+        "tipus_autor": "docent"
+    },
+    {
+        "consulta_id": 16,
+        "categoria_risc": [
+            "Trastorns de la conducta alimentària (TCA)"
+        ],
+        "nivell_urgencia": "Mitjà",
+        "nota_detall": 9,
+        "informacio_falta": [
+            "Falta saber si el fet s'ha repetit en el temps (persistència)."
+        ],
+        "text_consulta": "Em preocupa l'Albert. A l'hora del menjador amaga el menjar als tovallons per no haver-s'ho d'empassar, i demana constantment anar al lavabo just després.",
+        "tipus_autor": "docent"
+    },
+    {
+        "consulta_id": 17,
+        "categoria_risc": [
+            "Conflictes de convivència"
+        ],
+        "nivell_urgencia": "Mitjà",
+        "nota_detall": 6,
+        "informacio_falta": [
+            "Falta identificar els autors/agressors.",
+            "Falta saber si el fet s'ha repetit en el temps (persistència).",
+            "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix."
+        ],
+        "text_consulta": "Al grup de WhatsApp de la classe hi ha hagut una forta discussió per culpa d'un treball de grup. Dos alumnes s'han dit de tot i estan molt enfadats.",
+        "tipus_autor": "anònima"
+    },
+    {
+        "consulta_id": 18,
+        "categoria_risc": [
+            "Assetjament escolar (Bullying)",
+            "Ciberassetjament",
+            "Violències masclistes",
+            "Conflictes de convivència",
+            "Situació general de convivència"
+        ],
+        "nivell_urgencia": "Mitjà",
+        "nota_detall": 6,
+        "informacio_falta": [
+            "Falta identificar els autors/agressors.",
+            "Falta saber si el fet s'ha repetit en el temps (persistència).",
+            "nom victima"
+        ],
+        "text_consulta": "Al vestidor, les noies de 2n s'han començat a burlar del pes de la nova companya. Han començat a enviar stickers d'ella modificats al grup de la classe",
+        "tipus_autor": "docent"
+    },
+    {
+        "consulta_id": 19,
+        "categoria_risc": [
+            "Ciberassetjament",
+            "Violència sexual o Abús",
+            "Violències masclistes"
+        ],
+        "nivell_urgencia": "Alt",
+        "nota_detall": 8,
+        "informacio_falta": [
+            "Falta identificar els autors/agressors.",
+            "Falta saber si el fet s'ha repetit en el temps (persistència)."
+        ],
+        "text_consulta": "Una mare ha trucat per dir que la seva filla no vindrà avui a classe perquè un noi de 4t l'està obligant a enviar-li fotos íntimes i diu que si no ho fa publicarà unes que ja té.",
+        "tipus_autor": "docent"
+    },
+    {
+        "consulta_id": 20,
+        "categoria_risc": [
+            "Assetjament escolar (Bullying)",
+            "Ciberassetjament",
+            "Conflictes de convivència",
+            "Situació general de convivència"
+        ],
+        "nivell_urgencia": "Mitjà",
+        "nota_detall": 8,
+        "informacio_falta": [
+            "Falta identificar els autors/agressors."
+        ],
+        "text_consulta": "Des de principi de curs hi ha un grup de nois que em molesten constantment. Primer eren bromes, però ara m’insulten, em fan fotos sense permís i les ensenyen als altres. L’altre dia em van empènyer a les escales i ningú va fer res. Tinc por que vagi a pitjor",
+        "tipus_autor": "anònima"
+    },
+    {
+        "consulta_id": 21,
+        "categoria_risc": [
+            "Conducta suïcida"
+        ],
+        "nivell_urgencia": "Alt",
+        "nota_detall": 6,
+        "informacio_falta": [
+            "Falta identificar els autors/agressors.",
+            "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix."
+        ],
+        "text_consulta": "Un amic meu m’ha dit diverses vegades que no vol continuar vivint. Diu que està cansat de tot, que ningú l’entén i que ha buscat maneres de fer-se mal. Em preocupa molt.",
+        "tipus_autor": "anònima"
+    },
+    {
+        "consulta_id": 22,
+        "categoria_risc": [
+            "Violències masclistes"
+        ],
+        "nivell_urgencia": "Mitjà",
+        "nota_detall": 6,
+        "informacio_falta": [
+            "Falta identificar els autors/agressors.",
+            "nom victima"
+        ],
+        "text_consulta": "El meu nòvio em controla constantment. Em demana el mòbil, vol saber amb qui parlo i s’enfada si quedo amb amigues. Si no li contesto ràpid em diu que és perquè l’enganyo. Últimament em crida molt i em fa sentir culpable de tot.",
+        "tipus_autor": "anònima"
+    },
+    {
+        "consulta_id": 23,
+        "categoria_risc": [
+            "Assetjament escolar (Bullying)",
+            "Maltractament infantil",
+            "Situació general de convivència"
+        ],
+        "nivell_urgencia": "Mitjà",
+        "nota_detall": 6,
+        "informacio_falta": [
+            "Falta identificar els autors/agressors.",
+            "Falta saber si el fet s'ha repetit en el temps (persistència).",
+            "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix."
+        ],
+        "text_consulta": "Des que vaig dir que soc gai, alguns companys em fan comentaris ofensius i m’exclouen. També han escrit coses sobre mi a la pissarra. Em fa por explicar-ho.",
+        "tipus_autor": "anònima"
+    },
+    {
+        "consulta_id": 24,
+        "categoria_risc": [
+            "Conducta suïcida"
+        ],
+        "nivell_urgencia": "Mitjà",
+        "nota_detall": 5,
+        "informacio_falta": [
+            "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix.",
+            "nom"
+        ],
+        "text_consulta": "Des de fa mesos em sento molt trist i sense energies. No tinc ganes de sortir, ni de parlar amb ningú, ni d’estudiar. Em costa dormir i cada dia em sento pitjor. No sé si això és normal.",
+        "tipus_autor": "anònima"
+    },
+    {
+        "consulta_id": 25,
+        "categoria_risc": [
+            "Conducta suïcida"
+        ],
+        "nivell_urgencia": "Mitjà",
+        "nota_detall": 6,
+        "informacio_falta": [
+            "Falta avaluar si la víctima té un adult de confiança o si està fora de perill ara mateix.",
+            "nom"
+        ],
+        "text_consulta": "Des de fa mesos em sento molt trist i sense energies. No tinc ganes de sortir, ni de parlar amb ningú, ni d’estudiar. Em costa dormir i cada dia em sento pitjor. No sé si això és normal.",
+        "tipus_autor": "anònima"
+    },
+    {
+        "consulta_id": 26,
+        "categoria_risc": [
+            "Trastorns de la conducta alimentària (TCA)"
+        ],
+        "nivell_urgencia": "Mitjà",
+        "nota_detall": 6,
+        "informacio_falta": [
+            "noms"
+        ],
+        "text_consulta": "La meva millor amiga ha perdut molt pes en poc temps. Sempre diu que està grossa encara que no ho està i moltes vegades no dina. També va al lavabo just després de menjar.",
+        "tipus_autor": "anònima"
+    }
+]
